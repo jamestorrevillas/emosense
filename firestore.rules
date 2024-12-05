@@ -1,0 +1,40 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // User profile rules
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if true; // Allow reading for email verification
+    }
+    
+    // Project rules
+    match /projects/{projectId} {
+      allow create: if request.auth != null;
+      allow read: if true;
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+      
+      // Responses subcollection - allow read if user owns the project
+      match /responses/{responseId} {
+        allow create: if true;  // Allow anonymous submissions
+        allow read: if request.auth != null && 
+          get(/databases/$(database)/documents/projects/$(projectId)).data.userId == request.auth.uid;
+      }
+
+      // Allow listing of responses
+      match /responses/{responseId} {
+        allow list: if request.auth != null && 
+          get(/databases/$(database)/documents/projects/$(projectId)).data.userId == request.auth.uid;
+      }
+    }
+    
+    // Token rules
+    match /tokens/{tokenId} {
+      allow create: if request.auth != null;
+      allow read: if true;  // Allow public read for validation
+      allow delete: if request.auth != null && 
+        get(/databases/$(database)/documents/projects/$(resource.data.projectId)).data.userId == request.auth.uid;
+      allow update: if request.auth != null && 
+        get(/databases/$(database)/documents/projects/$(resource.data.projectId)).data.userId == request.auth.uid;
+    }
+  }
+}

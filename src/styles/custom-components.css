@@ -1,0 +1,36 @@
+/* src\styles\custom-components.css */
+/* Custom Switch styles */
+.custom-switch {
+    border: 1px solid #d4d4d4;
+    padding: 2px;
+    height: 24px !important;
+    width: 44px !important;
+    display: flex;
+    align-items: center;
+  }
+  
+  [data-state="unchecked"].custom-switch {
+    background-color: #e2e2e2;
+  }
+  
+  [data-state="checked"].custom-switch {
+    background-color: #2563eb;
+    border-color: #2563eb;
+  }
+  
+  .custom-switch-thumb {
+    width: 20px !important;
+    height: 20px !important;
+    border-radius: 50%;
+    transition: transform 0.2s ease;
+  }
+  
+  .custom-switch[data-state="checked"] .custom-switch-thumb {
+    transform: translateX(20px);
+    background-color: white;
+  }
+  
+  .custom-switch[data-state="unchecked"] .custom-switch-thumb {
+    transform: translateX(0);
+    background-color: white;
+  }
