@@ -193,8 +193,8 @@ export function ResultsDemo() {
                 Track emotion intensities over time during viewer sessions
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="h-[550px] w-full">
+            <CardContent className="w-full overflow-hidden"> {/* Added overflow-hidden */}
+              <div className="w-full min-h-[400px]"> {/* Changed fixed height to min-height */}
                 <EmotionalResponseTrend data={sampleData} />
               </div>
             </CardContent>
@@ -208,7 +208,7 @@ export function ResultsDemo() {
                 Comprehensive analysis of emotional patterns and responses
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="w-full overflow-hidden"> {/* Added overflow-hidden */}
               <OverallAnalysisView analysis={sampleOverallAnalysis} />
             </CardContent>
           </Card>
@@ -221,7 +221,7 @@ export function ResultsDemo() {
                 Moment-by-moment breakdown of emotional states
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="w-full overflow-hidden"> {/* Added overflow-hidden */}
               <EmotionalTimelineView timeline={sampleTimeline} />
             </CardContent>
           </Card>
