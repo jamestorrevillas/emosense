@@ -221,8 +221,9 @@ export function PlaygroundPage() {
       <Alert>
         <Info className="h-4 w-4" />
         <AlertDescription>
-          Use this playground to experiment with and understand how EmoSense detects and analyzes emotions.
-          Enable your camera and start tracking to see real-time emotion analysis and visualizations.
+          Use this playground to experiment with and understand how EmoSense detects and analyzes emotions. 
+          Enable your camera and start tracking to see real-time emotion analysis and visualizations. 
+          For best results, please remove glasses and face masks, as they may interfere with facial detection.
         </AlertDescription>
       </Alert>
 

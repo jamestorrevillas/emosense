@@ -187,7 +187,10 @@ export function VideoStep() {
                       <p>No face detected. Please face the camera to continue watching.</p>
                       <div className="flex items-center gap-2 text-sm">
                         <Lightbulb className="h-4 w-4 flex-shrink-0" />
-                        <p>Ensure proper lighting and face the camera directly for better detection.</p>
+                        <p>
+                          Ensure proper lighting and face the camera directly for better detection. 
+                          For optimal results, please remove glasses and face masks if possible.
+                        </p>
                       </div>
                     </AlertDescription>
                   </div>
