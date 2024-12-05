@@ -300,8 +300,8 @@ export function PlaygroundPage() {
       </Button>
     </div>
   )}
-</CardContent>
-        </Card>
+  </CardContent>
+      </Card>
 
         {/* Real-time Emotions Card */}
         <Card>
@@ -347,33 +347,33 @@ export function PlaygroundPage() {
       </div>
 
       {/* Analysis Results Section */}
-<div className="space-y-6">
-  <Separator />
-  
-  {/* Emotion Trend Section */}
-  <Card>
-    <CardHeader>
-      <CardTitle>Emotional Response Trend</CardTitle>
-      <CardDescription>
-        Visualization of emotion intensities over time during the tracking session
-      </CardDescription>
-    </CardHeader>
-    <CardContent>
-      {analysis.overall ? (
-        <EmotionalResponseTrend data={aggregatedData} />
-      ) : (
-        <div className="aspect-[2/1] flex items-center justify-center border-2 border-dashed rounded-lg bg-muted/50">
-          <p className="text-muted-foreground text-center px-4">
-            Complete tracking to see your emotional response trend graph.
-            <br />
-            <span className="text-sm">
-              The graph will show how your emotions varied over the session.
-            </span>
-          </p>
-        </div>
-      )}
-    </CardContent>
-  </Card>
+      <div className="space-y-6">
+        <Separator />
+        
+        {/* Emotion Trend Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Emotional Response Trend</CardTitle>
+            <CardDescription>
+              Visualization of emotion intensities over time during the tracking session
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {analysis.overall ? (
+              <EmotionalResponseTrend data={aggregatedData} />
+            ) : (
+              <div className="aspect-[2/1] flex items-center justify-center border-2 border-dashed rounded-lg bg-muted/50">
+                <p className="text-muted-foreground text-center px-4">
+                  Complete tracking to see your emotional response trend graph.
+                  <br />
+                  <span className="text-sm">
+                    The graph will show how your emotions varied over the session.
+                  </span>
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Overall Analysis Section */}
         <Card>
