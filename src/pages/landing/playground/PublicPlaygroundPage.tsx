@@ -324,13 +324,13 @@ export function PublicPlaygroundPage() {
             <CardContent>
               {currentEmotion ? (
                 <div className="space-y-4">
-                  <div className="text-xl font-bold text-center">
+                  <div className="text-3xl font-bold text-center"> {/* Increased font size */}
                     {currentEmotion.dominantEmotion?.toUpperCase()}
                   </div>
                   <div className="space-y-2">
                     {Object.entries(currentEmotion.scores).map(([emotion, score]) => (
                       <div key={emotion} className="flex items-center justify-between">
-                        <span className="capitalize">{emotion}</span>
+                        <span className="capitalize text-xl">{emotion}</span> {/* Increased font size */}
                         <div className="flex items-center gap-2">
                           <div className="w-32 bg-muted rounded-full h-2">
                             <div 
@@ -338,7 +338,7 @@ export function PublicPlaygroundPage() {
                               style={{ width: `${Math.max(0, Math.min(100, score))}%` }}
                             />
                           </div>
-                          <span className="min-w-[4ch] text-sm">
+                          <span className="min-w-[4ch] text-xl"> {/* Increased font size */}
                             {Math.round(score)}%
                           </span>
                         </div>
