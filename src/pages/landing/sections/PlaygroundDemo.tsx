@@ -4,6 +4,7 @@ import { Container } from "./Container";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Brain, Camera, ChevronRight, LineChart } from "lucide-react";
+import playgroundPreview from '@/assets/images/playground-preview.png'
 
 export function PlaygroundDemo() {
   return (
@@ -79,14 +80,9 @@ export function PlaygroundDemo() {
               <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border-2 border-slate-200 bg-slate-50 shadow-xl">
                 {/* You'll need to replace this with your actual screenshot */}
                 <img
-                  src="/src/assets/images/playground-preview.png"
+                  src={playgroundPreview}
                   alt="EmoSense Playground"
                   className="w-full h-full object-cover"
-                  onError={(e) => {
-                    // Fallback if image fails to load
-                    const target = e.target as HTMLImageElement;
-                    target.src = '/src/assets/images/playground-fallback.png';
-                  }}
                 />
               </div>
             </div>
