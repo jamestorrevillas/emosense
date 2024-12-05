@@ -1,5 +1,4 @@
 // src/components/emotion/visualization/OverallAnalysisView.tsx
-
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { EmotionAnalyzer } from "@/components/emotion/analysis/EmotionAnalyzer";
@@ -81,7 +80,7 @@ export function OverallAnalysisView({ analysis }: OverallAnalysisViewProps) {
                   <h4 className="font-medium capitalize">{emotion.emotion}</h4>
                   <div className="flex items-center gap-2">
                     <span className="text-sm bg-muted px-2 py-1 rounded-full">
-                      {emotion.intensity.toFixed(2)}%
+                      {emotion.intensity.toFixed(4)}%
                     </span>
                     <span className="text-sm text-muted-foreground">
                       ({formatIntensityLevel(level)})

@@ -11,6 +11,16 @@ export type EmotionLabel =
   | 'fear'
   | 'contempt';
 
+export interface AggregatedEmotionData {
+  timestamp: number;
+  emotions: Array<{
+    emotion: EmotionLabel;
+    avgIntensity: number;
+  }>;
+  dominantEmotion: EmotionLabel;
+  totalResponses: number;
+}
+
 export interface EmotionScores {
   neutral: number;
   happiness: number;
