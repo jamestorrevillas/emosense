@@ -7,8 +7,7 @@ import { Container } from "./sections/Container";
 import { FeaturesSection } from "./sections/FeaturesSection";
 import { PlaygroundDemo } from "./sections/PlaygroundDemo";
 import { ResultsDemo } from "./sections/ResultsDemo";
-import logoImage from '@/assets/images/logo.png'  // Add this import
-import playgroundPreview from '@/assets/images/playground-preview.png'
+import logoImage from '@/assets/images/logo.png'
 
 const LandingPage = () => {
   return (
@@ -52,7 +51,7 @@ const LandingPage = () => {
               <div className="flex flex-col items-center gap-4 mb-8">
                 <div className="flex items-center gap-3">
                   <img 
-                    src={playgroundPreview}
+                    src={logoImage}
                     alt="EmoSense Logo" 
                     className="h-12 w-auto"
                   />
