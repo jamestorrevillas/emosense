@@ -67,11 +67,10 @@ const LandingPage = () => {
               <h1 className="mb-8 text-5xl font-bold tracking-tight text-slate-900 sm:text-6xl">
                 Transform Video Feedback with Emotion AI
               </h1>
-              
+
               <p className="mx-auto mb-12 max-w-2xl text-lg text-slate-600">
-                EmoSense revolutionizes video feedback by analyzing viewer emotions in real-time. 
-                Get deeper insights into audience engagement, emotional responses, and content effectiveness 
-                through advanced AI-powered emotion detection.
+                EmoSense is an innovative video survey platform that combines powerful feedback collection tools with advanced emotion tracking technology. 
+                Create engaging surveys, collect structured responses, and gain deeper insights into audience engagement through AI-powered emotion detection - all in one solution.
               </p>
               
               <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
