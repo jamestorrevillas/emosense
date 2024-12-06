@@ -430,7 +430,7 @@ export const NewProjectPage = () => {
           <div className="flex items-center gap-4">
             {uploadStatus.status === 'uploading' && (
               <p className="text-sm text-muted-foreground">
-                Uploading video... {uploadStatus.progress}%
+                Uploading video...
               </p>
             )}
             <Button 
