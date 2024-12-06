@@ -47,6 +47,7 @@ export function TextQuestionEditor({
                   placeholder: e.target.value,
                 })
               }
+              className="text-muted-foreground placeholder:text-muted-foreground"
             />
           </div>
 
