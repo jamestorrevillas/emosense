@@ -100,7 +100,6 @@ export interface BaseQuestion {
 export interface MultipleChoiceQuestion extends BaseQuestion {
   type: 'multiple_choice';
   options: string[];
-  allowMultiple?: boolean;
 }
 
 export interface RatingScaleQuestion extends BaseQuestion {

@@ -5,7 +5,6 @@ import { QuestionEditor } from "./QuestionEditor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Plus, X } from "lucide-react";
 
 interface MultipleChoiceEditorProps {
@@ -57,22 +56,6 @@ export function MultipleChoiceEditor({
       onDuplicate={onDuplicate}
     >
       <div className="space-y-4">
-        {/* Allow Multiple Selection Toggle */}
-        <div className="flex items-center justify-between">
-          <div className="space-y-0.5">
-            <Label>Multiple Selection</Label>
-            <p className="text-sm text-muted-foreground">
-              Allow users to select multiple options
-            </p>
-          </div>
-          <Switch
-            checked={question.allowMultiple}
-            onCheckedChange={(checked) =>
-              onChange({ ...question, allowMultiple: checked })
-            }
-          />
-        </div>
-
         {/* Options List */}
         <div className="space-y-2">
           <Label>Answer Options</Label>
