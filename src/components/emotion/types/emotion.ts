@@ -39,6 +39,7 @@ export interface ProcessingStatus {
   fps: number;
   modelLoaded: boolean;
   error?: string;
+  isInitializing?: boolean;
 }
 
 export interface LoadingStatus {

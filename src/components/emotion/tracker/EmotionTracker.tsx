@@ -90,7 +90,11 @@ export function EmotionTracker({
   useEffect(() => {
     async function loadModel() {
       try {
-        setStatus(prev => ({ ...prev, isProcessing: true }));
+        setStatus(prev => ({ 
+          ...prev, 
+          isProcessing: true,
+          isInitializing: true
+        }));
         
         console.log("Loading emotion model...");
         const model = await tf.loadLayersModel('/models/emotion/model.json');
@@ -104,7 +108,8 @@ export function EmotionTracker({
         setStatus(prev => ({ 
           ...prev, 
           modelLoaded: true,
-          isProcessing: false 
+          isProcessing: false,
+          isInitializing: false
         }));
       } catch (err) {
         console.error('Error loading emotion model:', err);

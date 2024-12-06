@@ -12,7 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Play, Square, AlertCircle, Info, Webcam, Camera } from 'lucide-react';
+import { Play, Square, AlertCircle, Info, Webcam, Camera, Loader2  } from 'lucide-react';
 import type { EmotionData, ProcessingStatus, EmotionLabel } from '@/components/emotion/types/emotion';
 import type { EmotionalMoment, EmotionTimelineEntry, OverallAnalysis } from '@/components/emotion/types/analysis';
 import type { Box } from '@vladmandic/face-api';
@@ -40,7 +40,8 @@ export function PlaygroundPage() {
   const [status, setStatus] = useState<ProcessingStatus>({
     isProcessing: false,
     fps: 0,
-    modelLoaded: false
+    modelLoaded: false,
+    isInitializing: false
   });
   const [currentEmotion, setCurrentEmotion] = useState<EmotionData | null>(null);
   const [isFaceDetectedStable, setIsFaceDetectedStable] = useState(false);
@@ -209,6 +210,17 @@ export function PlaygroundPage() {
 
   return (
     <div className="container space-y-8 py-8">
+      {/* Show initialization alert */}
+      {status.isInitializing && (
+        <Alert className="bg-blue-50 border-blue-200">
+          <div className="flex items-center">
+            <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+            <AlertDescription className="text-blue-700 ml-2">
+              Initializing emotion detection models...
+            </AlertDescription>
+          </div>
+        </Alert>
+      )}
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight mb-1">Playground</h1>
@@ -262,46 +274,68 @@ export function PlaygroundPage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-  <WebcamFeed 
-    onStreamReady={handleStreamReady}
-    enabled={cameraEnabled}
-  />
-  
-  {cameraEnabled && isTracking && (
-    <div className={`flex items-center gap-2 justify-center p-2 rounded-md ${
-      isFaceDetectedStable ? 'bg-green-500/10 text-green-500' : 'bg-yellow-500/10 text-yellow-500'
-    }`}>
-      <AlertCircle className="h-4 w-4" />
-      <span className="text-sm">
-        {isFaceDetectedStable ? 'Face Detected' : 'No Face Detected'}
-      </span>
-    </div>
-  )}
+            <div className="relative">
+              <WebcamFeed 
+                onStreamReady={handleStreamReady}
+                enabled={cameraEnabled}
+              />
+              
+              {/* Initialization/Face Detection Overlay */}
+              {cameraEnabled && (status.isInitializing || (isTracking && !isFaceDetectedStable)) && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+                  {status.isInitializing ? (
+                    <Alert className="w-[90%] max-w-md border-blue-500 bg-blue-50/95 shadow-lg">
+                      <div className="flex gap-3">
+                        <Loader2 className="h-5 w-5 flex-shrink-0 text-blue-500 animate-spin" />
+                        <AlertDescription className="text-blue-800">
+                          <p>Initializing emotion detection models...</p>
+                          <p className="text-sm mt-1">This may take a few moments.</p>
+                        </AlertDescription>
+                      </div>
+                    </Alert>
+                  ) : (
+                    <Alert 
+                      variant="destructive"
+                      className="w-[90%] max-w-md border-red-500 bg-red-50/95 shadow-lg"
+                    >
+                      <div className="flex gap-3">
+                        <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-500" />
+                        <AlertDescription className="text-red-800">
+                          No face detected. Please face the camera directly.
+                        </AlertDescription>
+                      </div>
+                    </Alert>
+                  )}
+                </div>
+              )}
+            </div>
 
-  {cameraEnabled && (
-    <div className="flex justify-center gap-4">
-      <Button
-        onClick={startTracking}
-        disabled={!stream || isTracking || !status.modelLoaded}
-        size="lg"
-        className="bg-[#011BA1] hover:bg-[#00008B]"
-      >
-        <Play className="mr-2 h-4 w-4" />
-        Start Tracking
-      </Button>
-      <Button
-        onClick={stopTracking}
-        disabled={!isTracking}
-        variant="destructive"
-        size="lg"
-      >
-        <Square className="mr-2 h-4 w-4" />
-        Stop Tracking
-      </Button>
-    </div>
-  )}
-  </CardContent>
-      </Card>
+            {/* Controls Section */}
+            {cameraEnabled && (
+              <div className="flex justify-center gap-4">
+                <Button
+                  onClick={startTracking}
+                  disabled={!stream || isTracking || !status.modelLoaded}
+                  size="lg"
+                  className="bg-[#011BA1] hover:bg-[#00008B]"
+                >
+                  <Play className="mr-2 h-4 w-4" />
+                  Start Tracking
+                </Button>
+                <Button
+                  onClick={stopTracking}
+                  disabled={!isTracking}
+                  variant="destructive"
+                  size="lg"
+                >
+                  <Square className="mr-2 h-4 w-4" />
+                  Stop Tracking
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Real-time Emotions Card */}
         <Card>
