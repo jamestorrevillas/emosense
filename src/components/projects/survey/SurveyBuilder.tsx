@@ -59,8 +59,7 @@ export function SurveyBuilder({ questions, onChange }: SurveyBuilderProps) {
         newQuestion = {
           ...baseQuestion,
           type: "multiple_choice",
-          options: [],
-          allowMultiple: false,
+          options: []
         };
         break;
 

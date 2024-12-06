@@ -250,9 +250,6 @@ export const EditProjectPage = () => {
         const { ...cleanQuestion } = question;
 
         switch (cleanQuestion.type) {
-          case 'multiple_choice':
-            if (cleanQuestion.allowMultiple === undefined) delete cleanQuestion.allowMultiple;
-            break;
           case 'text':
             if (cleanQuestion.placeholder === undefined) delete cleanQuestion.placeholder;
             if (cleanQuestion.maxLength === undefined) delete cleanQuestion.maxLength;

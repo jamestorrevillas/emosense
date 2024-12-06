@@ -182,9 +182,6 @@ export const NewProjectPage = () => {
             if (cleanQuestion.maxLabel === undefined) delete cleanQuestion.maxLabel;
             if (cleanQuestion.step === undefined) delete cleanQuestion.step;
             break;
-          case 'multiple_choice':
-            if (cleanQuestion.allowMultiple === undefined) delete cleanQuestion.allowMultiple;
-            break;
         }
         return cleanQuestion;
       });
