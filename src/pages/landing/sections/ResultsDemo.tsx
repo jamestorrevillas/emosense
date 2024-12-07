@@ -185,47 +185,27 @@ export function ResultsDemo() {
         </div>
 
         <div className="space-y-8">
-          {/* Emotion Response Trend */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Emotional Response Trend</CardTitle>
-              <CardDescription>
-                Track emotion intensities over time during viewer sessions
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="w-full overflow-hidden"> {/* Added overflow-hidden */}
-              <div className="w-full min-h-[400px]"> {/* Changed fixed height to min-height */}
-                <EmotionalResponseTrend data={sampleData} />
-              </div>
-            </CardContent>
-          </Card>
+        {/* Emotion Response Trend */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Emotional Response Trend</CardTitle>
+            <CardDescription>
+              Track emotion intensities over time during viewer sessions
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="w-full overflow-hidden">
+            <div className="w-full min-h-[400px]">
+              <EmotionalResponseTrend data={sampleData} />
+            </div>
+          </CardContent>
+        </Card>
 
-          {/* Overall Analysis */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Overall Analysis</CardTitle>
-              <CardDescription>
-                Comprehensive analysis of emotional patterns and responses
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="w-full overflow-hidden"> {/* Added overflow-hidden */}
-              <OverallAnalysisView analysis={sampleOverallAnalysis} />
-            </CardContent>
-          </Card>
+        {/* Overall Analysis */}
+        <OverallAnalysisView analysis={sampleOverallAnalysis} />
 
-          {/* Timeline Analysis */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Emotional Timeline</CardTitle>
-              <CardDescription>
-                Moment-by-moment breakdown of emotional states
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="w-full overflow-hidden"> {/* Added overflow-hidden */}
-              <EmotionalTimelineView timeline={sampleTimeline} />
-            </CardContent>
-          </Card>
-        </div>
+        {/* Timeline Analysis */}
+          <EmotionalTimelineView timeline={sampleTimeline} />
+      </div>
       </Container>
     </section>
   );
