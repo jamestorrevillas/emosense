@@ -51,9 +51,6 @@ export function EmotionalResponseTrend({ data }: EmotionalResponseTrendProps) {
 
   return (
     <>
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-700 mb-4">
-        <p><strong>Note:</strong> The emotion detection feature is currently in beta and experimental. Results may not guarantee 100% accuracy, and emotions with very low intensities might be misdetections. This feature is continuously being improved for better accuracy.</p>
-      </div>
       <Card>
         <CardContent className="pt-6">
           {/* Add a scrollable container for the chart */}

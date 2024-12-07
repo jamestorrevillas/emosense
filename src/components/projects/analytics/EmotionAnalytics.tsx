@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { collection, doc, query, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { EmotionalResponseTrend } from '@/components/emotion/visualization/EmotionalResponseTrend';
 import { OverallAnalysisView } from '@/components/emotion/visualization/OverallAnalysisView';
 import { EmotionalTimelineView } from '@/components/emotion/visualization/EmotionalTimelineView';
@@ -172,10 +172,25 @@ export function EmotionAnalytics({ projectId }: EmotionAnalyticsProps) {
 
   return (
     <div className="space-y-6">
-      {/* Emotion Response Trend */}
-      <EmotionalResponseTrend 
-        data={aggregatedData}
-      />
+      {/* Beta Notice Alert */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-700">
+        <p><strong>Note:</strong> The emotion detection feature is currently in beta and experimental. Results may not guarantee 100% accuracy, and emotions with very low intensities might be misdetections. This feature is continuously being improved for better accuracy.</p>
+      </div>
+  
+      {/* Emotion Response Trend - Now wrapped in Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Emotional Response Trend</CardTitle>
+          <CardDescription>
+            Track emotion intensities over time during viewer sessions
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <EmotionalResponseTrend 
+            data={aggregatedData}
+          />
+        </CardContent>
+      </Card>
 
       {/* Overall Analysis */}
       {analysis.overall && (
