@@ -1,6 +1,6 @@
 // src/components/emotion/visualization/EmotionalTimelineView.tsx
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EmotionAnalyzer } from "@/components/emotion/analysis/EmotionAnalyzer";
 import type { EmotionTimelineEntry } from '@/components/emotion/types/analysis';
@@ -24,17 +24,12 @@ export function EmotionalTimelineView({ timeline }: EmotionalTimelineViewProps) 
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Emotional Timeline</CardTitle>
-        <CardDescription>Moment-by-moment emotional response</CardDescription>
-      </CardHeader>
-      {/* Add max height and overflow to CardContent */}
       <CardContent>
-        <div className="space-y-6 max-h-[400px] overflow-y-auto">
+        <div className="space-y-6 pt-4 mt-4 max-h-[400px] overflow-y-auto">
           {timeline.map((entry, index) => (
             <div key={index} className="space-y-2">
               <div className="flex items-start gap-4">
-                <div className="text-sm font-mono text-primary w-16">
+                <div className="text-sm font-mono text-primary w-16 pt-1">
                   {entry.timestamp}
                 </div>
                 <div className="flex-1">

@@ -1,5 +1,5 @@
 // src/components/emotion/visualization/OverallAnalysisView.tsx
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { EmotionAnalyzer } from "@/components/emotion/analysis/EmotionAnalyzer";
 import { OverallRules } from "@/components/emotion/analysis/rules/OverallRules";
@@ -50,11 +50,7 @@ export function OverallAnalysisView({ analysis }: OverallAnalysisViewProps) {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Overall Analysis</CardTitle>
-        <CardDescription>Analysis based on full session data</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-6 pt-4">
         {/* Overall Summary */}
         <div className="space-y-2">
           <h3 className="font-semibold text-lg">{analysis.primaryResponse}</h3>
