@@ -50,7 +50,15 @@ export const SignInPage = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#F8F9FA] font-['Roboto','Segoe_UI',sans-serif] p-4">
-      <div className="w-full max-w-[400px]">
+      <div className="w-full max-w-[400px] space-y-4">
+        {/* Home Link */}
+        <Link 
+          to="/" 
+          className="w-full text-center block text-sm text-slate-600 hover:text-[#011BA1] transition-colors"
+        >
+          ← Back to Home
+        </Link>
+  
         {/* Logo */}
         <div className="text-center mb-6">
           <div className="flex items-center justify-center gap-2 mb-2">
@@ -63,7 +71,7 @@ export const SignInPage = () => {
           </div>
           <p className="text-slate-600">Video Emotion Analytics Platform</p>
         </div>
-
+  
         <Card>
           <CardHeader>
             <CardTitle className="text-2xl text-center">Welcome back</CardTitle>
