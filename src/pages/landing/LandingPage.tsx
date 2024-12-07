@@ -97,6 +97,13 @@ const LandingPage = () => {
                   </Link>
                 </Button>
               </div>
+              {/* Scroll prompt */}
+              <div className="mt-12 text-sm text-muted-foreground animate-bounce">
+                <div className="flex flex-col items-center gap-2">
+                  <ChevronRight className="h-4 w-4 rotate-90" />
+                  <p>Scroll down to explore our features</p>
+                </div>
+              </div>
             </div>
           </Container>
         </section>
