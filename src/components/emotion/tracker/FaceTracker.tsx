@@ -5,9 +5,11 @@ import * as faceapi from '@vladmandic/face-api';
 interface FaceTrackerProps {
   stream: MediaStream | null;
   isTracking: boolean;
-  detectionThreshold?: number;
+  lostThreshold?: number; // Threshold for confirming face lost
+  foundThreshold?: number; // Threshold for confirming face found (lower)
   onFaceDetected?: (detected: boolean, face?: HTMLCanvasElement, box?: faceapi.Box) => void;
   onFaceDetectedStable?: (detected: boolean) => void;
+  onModelLoaded?: (loaded: boolean) => void;
 }
 
 // Type guard for DOMException
@@ -18,9 +20,11 @@ function isDOMException(error: unknown): error is DOMException {
 export function FaceTracker({
   stream,
   isTracking,
-  detectionThreshold = 10,
+  lostThreshold = 15, // Higher threshold for confirming face lost
+  foundThreshold = 1,  // Lower threshold for confirming face found
   onFaceDetected,
-  onFaceDetectedStable
+  onFaceDetectedStable,
+  onModelLoaded
 }: FaceTrackerProps) {
   const [modelLoaded, setModelLoaded] = useState(false);
   const processingRef = useRef(false);
@@ -30,6 +34,7 @@ export function FaceTracker({
   const lastStableStateRef = useRef<boolean | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const mounted = useRef(true);
+  const modelsLoadingRef = useRef(false);
 
   const updateStableState = useCallback((detected: boolean) => {
     if (!mounted.current) return;
@@ -42,14 +47,69 @@ export function FaceTracker({
       consecutiveNonDetectionsRef.current++;
     }
 
-    if (consecutiveDetectionsRef.current >= detectionThreshold && lastStableStateRef.current !== true) {
+    // Use different thresholds for detection vs loss
+    if (consecutiveDetectionsRef.current >= foundThreshold && lastStableStateRef.current !== true) {
       lastStableStateRef.current = true;
       onFaceDetectedStable?.(true);
-    } else if (consecutiveNonDetectionsRef.current >= detectionThreshold && lastStableStateRef.current !== false) {
+    } else if (consecutiveNonDetectionsRef.current >= lostThreshold && lastStableStateRef.current !== false) {
       lastStableStateRef.current = false;
       onFaceDetectedStable?.(false);
     }
-  }, [detectionThreshold, onFaceDetectedStable]);
+  }, [foundThreshold, lostThreshold, onFaceDetectedStable]);
+
+  // Load models when camera is enabled
+  useEffect(() => {
+    if (!stream || modelsLoadingRef.current || modelLoaded) return;
+
+    async function loadModels() {
+      if (modelsLoadingRef.current) return;
+      modelsLoadingRef.current = true;
+
+      try {
+        console.log('Loading face detection models...');
+        await Promise.all([
+          faceapi.nets.tinyFaceDetector.loadFromUri('/models/face-api'),
+          faceapi.nets.faceLandmark68Net.loadFromUri('/models/face-api')
+        ]);
+
+        if (mounted.current) {
+          console.log('Face detection models loaded successfully');
+          setModelLoaded(true);
+          onModelLoaded?.(true);
+        }
+      } catch (error) {
+        console.error('Error loading face detection models:', error);
+        onModelLoaded?.(false);
+      } finally {
+        modelsLoadingRef.current = false;
+      }
+    }
+
+    loadModels();
+  }, [stream, modelLoaded, onModelLoaded]);
+
+  // Initialize video element
+  useEffect(() => {
+    if (!videoRef.current) {
+      videoRef.current = document.createElement('video');
+      videoRef.current.playsInline = true;
+      videoRef.current.muted = true;
+    }
+
+    return () => {
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+        videoRef.current = null;
+      }
+    };
+  }, []);
+
+  // Update video stream
+  useEffect(() => {
+    if (videoRef.current && stream) {
+      videoRef.current.srcObject = stream;
+    }
+  }, [stream]);
 
   const detectFace = useCallback(async () => {
     if (!stream || !modelLoaded || processingRef.current || !videoRef.current || !mounted.current) {
@@ -63,7 +123,6 @@ export function FaceTracker({
         try {
           await videoRef.current.play();
         } catch (error: unknown) {
-          // Handle play error with type checking
           if (isDOMException(error) && error.name !== 'AbortError') {
             console.error('Error playing video:', error);
           }
@@ -98,7 +157,6 @@ export function FaceTracker({
       }
 
     } catch (error: unknown) {
-      // Type check the error before accessing properties
       if (isDOMException(error) && error.name !== 'AbortError') {
         console.error('Error detecting face:', error);
       }
@@ -109,47 +167,7 @@ export function FaceTracker({
     }
   }, [stream, modelLoaded, onFaceDetected, updateStableState]);
 
-  useEffect(() => {
-    async function loadModels() {
-      try {
-        console.log('Loading face detection models...');
-        await Promise.all([
-          faceapi.nets.tinyFaceDetector.loadFromUri('/models/face-api'),
-          faceapi.nets.faceLandmark68Net.loadFromUri('/models/face-api')
-        ]);
-        if (mounted.current) {
-          console.log('Face detection models loaded successfully');
-          setModelLoaded(true);
-        }
-      } catch (error) {
-        console.error('Error loading face detection models:', error);
-      }
-    }
-
-    loadModels();
-  }, []);
-
-  useEffect(() => {
-    if (!videoRef.current) {
-      videoRef.current = document.createElement('video');
-      videoRef.current.playsInline = true;
-      videoRef.current.muted = true;
-    }
-
-    return () => {
-      if (videoRef.current) {
-        videoRef.current.srcObject = null;
-        videoRef.current = null;
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    if (videoRef.current && stream) {
-      videoRef.current.srcObject = stream;
-    }
-  }, [stream]);
-
+  // Handle tracking state
   useEffect(() => {
     const cleanupInterval = () => {
       if (intervalRef.current) {
@@ -170,6 +188,7 @@ export function FaceTracker({
     return cleanupInterval;
   }, [isTracking, modelLoaded, detectFace]);
 
+  // Cleanup on unmount
   useEffect(() => {
     mounted.current = true;
     return () => {

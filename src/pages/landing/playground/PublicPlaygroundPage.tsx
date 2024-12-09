@@ -18,6 +18,8 @@ import type { EmotionData, ProcessingStatus, EmotionLabel } from '@/components/e
 import type { EmotionalMoment, EmotionTimelineEntry, OverallAnalysis } from '@/components/emotion/types/analysis';
 import type { Box } from '@vladmandic/face-api';
 import { Container } from '../sections/Container';
+import { useTrackingTime } from '@/lib/hooks/useTrackingTime';
+import { TrackingTime } from '@/components/emotion/tracker/TrackingTime';
 
 interface AggregatedEmotionData {
   timestamp: number;
@@ -55,6 +57,11 @@ export function PublicPlaygroundPage() {
     overall: OverallAnalysis | null;
     timeline: EmotionTimelineEntry[];
   }>({ overall: null, timeline: [] });
+  const { elapsedTime, startTimer, stopTimer, pauseTimer, resumeTimer, resetTimer } = useTrackingTime();
+  const [isTimerPaused, setIsTimerPaused] = useState(false);
+  const [isFaceModelLoaded, setIsFaceModelLoaded] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(false);
+  const [isFirstTrackingStart, setIsFirstTrackingStart] = useState(true);
 
   // Cleanup effect
   useEffect(() => {
@@ -93,6 +100,9 @@ export function PublicPlaygroundPage() {
       setDetectedFace(null);
       setFaceBox(null);
       setIsFaceDetectedStable(false);
+      // Add these lines to reset timer
+      stopTimer();
+      resetTimer();
     }
     
     setCameraEnabled(enabled);
@@ -183,17 +193,39 @@ export function PublicPlaygroundPage() {
 
   const handleFaceDetectedStable = (detected: boolean) => {
     setIsFaceDetectedStable(detected);
+    if (isTracking) {
+      if (!detected) {
+        pauseTimer();
+        setIsTimerPaused(true);
+      } else {
+        resumeTimer();
+        setIsTimerPaused(false);
+      }
+    }
   };
 
   const startTracking = () => {
+    if (isFirstTrackingStart) {
+      setIsInitializing(true);
+      // Use default FaceTracker lost threshold (10) * 50ms
+      setTimeout(() => {
+        setIsInitializing(false);
+        setIsFirstTrackingStart(false);
+      }, 15 * 100); // Using FaceTracker's default lostThreshold
+    }
+  
     setTrackingStartTime(Date.now());
     setEmotionData([]);
     setAnalysis({ overall: null, timeline: [] });
+    startTimer();
     setIsTracking(true);
+    setIsTimerPaused(false);
   };
 
   const stopTracking = () => {
     setIsTracking(false);
+    stopTimer();
+    setIsTimerPaused(false);
     
     if (aggregatedData.length > 0) {
       try {
@@ -209,17 +241,6 @@ export function PublicPlaygroundPage() {
 
   return (
     <div className="container space-y-8 py-8">
-      {/* Show initialization alert */}
-      {status.isInitializing && (
-        <Alert className="bg-blue-50 border-blue-200">
-          <div className="flex items-center">
-            <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
-            <AlertDescription className="text-blue-700 ml-2">
-              Initializing emotion detection models...
-            </AlertDescription>
-          </div>
-        </Alert>
-      )}
       <Container className="py-8">
         {/* Header with Back Button */}
         <div className="flex items-center gap-4 mb-8">
@@ -291,35 +312,46 @@ export function PublicPlaygroundPage() {
                   onStreamReady={handleStreamReady}
                   enabled={cameraEnabled}
                 />
+
+                {cameraEnabled && (
+                  <TrackingTime 
+                    elapsedTime={elapsedTime}
+                    isTracking={isTracking}
+                    isPaused={isTimerPaused}
+                  />
+                )}
+
                 
                 {/* Initialization/Face Detection Overlay */}
-                {cameraEnabled && (status.isInitializing || (isTracking && !isFaceDetectedStable)) && (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-                    {status.isInitializing ? (
-                      <Alert className="w-[90%] max-w-md border-blue-500 bg-blue-50/95 shadow-lg">
-                        <div className="flex gap-3">
-                          <Loader2 className="h-5 w-5 flex-shrink-0 text-blue-500 animate-spin" />
-                          <AlertDescription className="text-blue-800">
-                            <p>Initializing emotion detection models...</p>
-                            <p className="text-sm mt-1">This may take a few moments.</p>
-                          </AlertDescription>
-                        </div>
-                      </Alert>
-                    ) : (
-                      <Alert 
-                        variant="destructive"
-                        className="w-[90%] max-w-md border-red-500 bg-red-50/95 shadow-lg"
-                      >
-                        <div className="flex gap-3">
-                          <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-500" />
-                          <AlertDescription className="text-red-800">
-                            No face detected. Please face the camera directly.
-                          </AlertDescription>
-                        </div>
-                      </Alert>
-                    )}
-                  </div>
+                {cameraEnabled && (
+                  (isInitializing || (!isFaceDetectedStable && isTracking && !isInitializing)) && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+                      {isInitializing ? (
+                        <Alert className="w-[90%] max-w-md border-blue-500 bg-blue-50/95 shadow-lg">
+                          <div className="flex gap-3">
+                            <Loader2 className="h-5 w-5 flex-shrink-0 text-blue-500 animate-spin" />
+                            <AlertDescription className="text-blue-800">
+                              <p>Initializing emotion detection models...</p>
+                              <p className="text-sm mt-1">This may take a few moments.</p>
+                            </AlertDescription>
+                          </div>
+                        </Alert>
+                      ) : (
+                        <Alert 
+                          variant="destructive"
+                          className="w-[90%] max-w-md border-red-500 bg-red-50/95 shadow-lg"
+                        >
+                          <div className="flex gap-3">
+                            <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-500" />
+                            <AlertDescription className="text-red-800">
+                              No face detected. Please face the camera directly.
+                            </AlertDescription>
+                          </div>
+                        </Alert>
+                      )}
+                    </div>
+                  )
                 )}
               </div>
 
@@ -328,7 +360,7 @@ export function PublicPlaygroundPage() {
                 <div className="flex justify-center gap-4">
                   <Button
                     onClick={startTracking}
-                    disabled={!stream || isTracking || !status.modelLoaded}
+                    disabled={!stream || isTracking || !status.modelLoaded || !isFaceModelLoaded}
                     size="lg"
                     className="bg-[#011BA1] hover:bg-[#00008B]"
                   >
@@ -395,6 +427,11 @@ export function PublicPlaygroundPage() {
         {/* Analysis Results Section */}
         <div className="space-y-6">
           <Separator />
+          
+          {/* Beta Notice Alert */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-700">
+            <p><strong>Note:</strong> The emotion detection feature is currently in beta and experimental. Results may not guarantee 100% accuracy, and emotions with very low intensities might be misdetections. This feature is continuously being improved for better accuracy.</p>
+          </div>
           
           {/* Emotion Trend Section */}
           <Card>
@@ -478,15 +515,16 @@ export function PublicPlaygroundPage() {
             <FaceTracker
               stream={stream}
               isTracking={isTracking}
-              detectionThreshold={5}
               onFaceDetected={handleFaceDetected}
               onFaceDetectedStable={handleFaceDetectedStable}
+              onModelLoaded={setIsFaceModelLoaded}
             />
             <EmotionTracker
               stream={stream}
               detectedFace={detectedFace}
               faceBox={faceBox}
               isTracking={isTracking}
+              isFaceDetected={isFaceDetectedStable}
               onEmotionDetected={handleEmotionDetected}
               onProcessingStatusChange={handleProcessingStatusChange}
             />

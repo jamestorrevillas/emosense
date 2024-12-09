@@ -9,7 +9,7 @@ import { FaceTracker } from "@/components/emotion/tracker/FaceTracker";
 import { EmotionTracker } from "@/components/emotion/tracker/EmotionTracker";
 import { AlertCircle, Lightbulb, Loader2 } from 'lucide-react';
 import type { Box } from '@vladmandic/face-api';
-import type { EmotionData, ProcessingStatus } from '@/components/emotion/types/emotion';
+import type { EmotionData } from '@/components/emotion/types/emotion';
 import type { EmotionDataPoint, EmotionResponse } from '@/types/response';
 
 export function VideoStep() {
@@ -19,14 +19,9 @@ export function VideoStep() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isTrackingEmotions, setIsTrackingEmotions] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [modelStatus, setModelStatus] = useState<ProcessingStatus>({
-    isProcessing: false,
-    fps: 0,
-    modelLoaded: false,
-    isInitializing: true
-  });
+  const [isInitializing, setIsInitializing] = useState(false);
 
-  // Refs
+  // Refs for tracking emotional data
   const emotionDataRef = useRef<EmotionDataPoint[]>([]);
   const activePlayStartRef = useRef<number>(0);
   const totalPlayTimeRef = useRef<number>(0);
@@ -74,36 +69,46 @@ export function VideoStep() {
     const handleFullscreenChange = () => {
       const fullscreenElement = document.fullscreenElement;
       setIsFullscreen(!!fullscreenElement);
+
+      // Exit fullscreen if face is not detected
+      if (fullscreenElement && !responses.isFaceDetected) {
+        document.exitFullscreen().catch(err => {
+          console.error('Error exiting fullscreen:', err);
+        });
+      }
     };
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
     };
-  }, []);
+  }, [responses.isFaceDetected]);
 
   const handleFaceDetectedStable = (detected: boolean) => {
     updateResponses({ isFaceDetected: detected });
-    if (!detected) {
+    if (!detected && isPlaying) {
+      setIsPlaying(false);
       // Exit fullscreen if face is not detected
       if (document.fullscreenElement) {
         document.exitFullscreen().catch(err => {
           console.error('Error exiting fullscreen:', err);
         });
       }
-      // Pause video
-      if (isPlaying) {
-        setIsPlaying(false);
-      }
     }
   };
 
+  // Initialize on component mount
+  useEffect(() => {
+    setIsInitializing(true);
+    setTimeout(() => {
+      setIsInitializing(false);
+    }, 15 * 100); // Using FaceTracker's default lostThreshold
+  }, []); // Run once on mount
+
   const handlePlayAttempt = (wantsToPlay: boolean) => {
     if (wantsToPlay && !responses.isFaceDetected) {
-      setIsPlaying(false);
       return;
     }
-    
     setIsPlaying(wantsToPlay);
   };
 
@@ -158,10 +163,6 @@ export function VideoStep() {
     }
   };
 
-  const handleProcessingStatusChange = (status: ProcessingStatus) => {
-    setModelStatus(status);
-  };
-
   return (
     <div className="max-w-4xl mx-auto space-y-4">
       <Card>
@@ -183,43 +184,43 @@ export function VideoStep() {
               className="rounded-none"
             />
             
-            {/* Face Detection Overlay + Initialization Message */}
-            {(!isFullscreen && (!responses.isFaceDetected || modelStatus.isInitializing)) && (
-              <div className="absolute inset-0 flex items-center justify-center transition-all duration-300 z-[60]">
-                <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-                {modelStatus.isInitializing ? (
-                  <Alert 
-                    className="w-[90%] max-w-md border-blue-500 bg-blue-50/95 shadow-lg transform transition-all duration-300"
-                  >
-                    <div className="flex gap-3">
-                      <Loader2 className="h-5 w-5 flex-shrink-0 text-blue-500 animate-spin" />
-                      <AlertDescription className="text-blue-800">
-                        <p>Initializing emotion detection models...</p>
-                        <p className="text-sm mt-1">This may take a few moments.</p>
-                      </AlertDescription>
-                    </div>
-                  </Alert>
-                ) : (
-                  <Alert 
-                    variant="destructive"
-                    className="w-[90%] max-w-md border-red-500 bg-red-50/95 shadow-lg transform transition-all duration-300"
-                  >
-                    <div className="flex gap-3">
-                      <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-500" />
-                      <AlertDescription className="text-red-800 space-y-2">
-                        <p>No face detected. Please face the camera to continue watching.</p>
-                        <div className="flex items-center gap-2 text-sm">
-                          <Lightbulb className="h-4 w-4 flex-shrink-0" />
-                          <p>
-                            Ensure proper lighting and face the camera directly for better detection. 
-                            For optimal results, please remove glasses and face masks if possible.
-                          </p>
-                        </div>
-                      </AlertDescription>
-                    </div>
-                  </Alert>
-                )}
-              </div>
+            {/* Face Detection Overlay */}
+            {responses.cameraStream && (
+              (isInitializing || (!responses.isFaceDetected && !isFullscreen)) && (
+                <div className="absolute inset-0 flex items-center justify-center transition-all duration-300 z-[60]">
+                  <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+                  {isInitializing ? (
+                    <Alert className="w-[90%] max-w-md border-blue-500 bg-blue-50/95 shadow-lg">
+                      <div className="flex gap-3">
+                        <Loader2 className="h-5 w-5 flex-shrink-0 text-blue-500 animate-spin" />
+                        <AlertDescription className="text-blue-800">
+                          <p>Initializing emotion detection models...</p>
+                          <p className="text-sm mt-1">This may take a few moments.</p>
+                        </AlertDescription>
+                      </div>
+                    </Alert>
+                  ) : (
+                    <Alert 
+                      variant="destructive"
+                      className="w-[90%] max-w-md border-red-500 bg-red-50/95 shadow-lg transform transition-all duration-300"
+                    >
+                      <div className="flex gap-3">
+                        <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-500" />
+                        <AlertDescription className="text-red-800 space-y-2">
+                          <p>No face detected. Please face the camera to continue watching.</p>
+                          <div className="flex items-center gap-2 text-sm">
+                            <Lightbulb className="h-4 w-4 flex-shrink-0" />
+                            <p>
+                              Ensure proper lighting and face the camera directly for better detection. 
+                              For optimal results, please remove glasses and face masks if possible.
+                            </p>
+                          </div>
+                        </AlertDescription>
+                      </div>
+                    </Alert>
+                  )}
+                </div>
+              )
             )}
           </div>
 
@@ -243,7 +244,6 @@ export function VideoStep() {
           <FaceTracker
             stream={responses.cameraStream}
             isTracking={true}
-            detectionThreshold={10}
             onFaceDetected={handleFaceDetected}
             onFaceDetectedStable={handleFaceDetectedStable}
           />
@@ -252,8 +252,8 @@ export function VideoStep() {
             detectedFace={detectedFace}
             faceBox={faceBox}
             isTracking={isTrackingEmotions}
+            isFaceDetected={responses.isFaceDetected}
             onEmotionDetected={handleEmotionDetected}
-            onProcessingStatusChange={handleProcessingStatusChange}
           />
         </div>
       )}

@@ -9,6 +9,7 @@ interface EmotionTrackerProps {
   detectedFace: HTMLCanvasElement | null;
   faceBox: Box | null;
   isTracking: boolean;
+  isFaceDetected?: boolean; // Add this prop
   onProcessingStatusChange?: (status: ProcessingStatus) => void;
   onEmotionDetected?: (data: EmotionData) => void;
 }
@@ -18,30 +19,27 @@ const EMOTION_LABELS: EmotionLabel[] = [
   'anger', 'disgust', 'fear', 'contempt'
 ];
 
-// Calibration factors to compensate for class imbalance
-// Higher values for underrepresented emotions to boost their signal
+// Calibration factors remain the same
 const CALIBRATION_FACTORS: Record<EmotionLabel, number> = {
-  'neutral': 0.35,    // Reduced to prevent over-dominance (most common state)
-  'happiness': 0.55,  // Slightly increased (most reliably detected positive emotion)
-  'surprise': 1.4,    // Increased (brief, can be subtle, needs boost)
-  'sadness': 1.8,    // Higher (often subtle, commonly confused with neutral)
-  'anger': 2.0,      // Increased (important to detect, often mixed with other emotions)
-  'disgust': 5.0,    // Significantly higher (very limited data, distinctive expression)
-  'fear': 4.0,       // Higher (rare, often confused with surprise)
-  'contempt': 6.0     // Highest (extremely limited data, subtle expression)
+  'neutral': 0.35,
+  'happiness': 0.55,
+  'surprise': 1.4,
+  'sadness': 1.8,
+  'anger': 2.0,
+  'disgust': 5.0,
+  'fear': 4.0,
+  'contempt': 6.0
 };
 
-// Thresholds adjusted based on training data distribution
-// Lower thresholds for emotions with less training data
 const EMOTION_THRESHOLDS: Record<EmotionLabel, number> = {
-  'neutral': 0.22,    // Balanced to allow other emotions to surface
-  'happiness': 0.18,  // Lower (reliable detection, distinct features)
-  'surprise': 0.16,   // Moderate (distinctive but can be confused with fear)
-  'sadness': 0.15,    // Moderate (subtle but important to detect)
-  'anger': 0.13,     // Lower threshold (important for UX insights)
-  'disgust': 0.09,   // Very low (rare but distinctive when present)
-  'fear': 0.11,      // Low (rare, needs to be detected when present)
-  'contempt': 0.08    // Lowest (extremely subtle, needs sensitive detection)
+  'neutral': 0.22,
+  'happiness': 0.18,
+  'surprise': 0.16,
+  'sadness': 0.15,
+  'anger': 0.13,
+  'disgust': 0.09,
+  'fear': 0.11,
+  'contempt': 0.08
 };
 
 const EMOTION_INTERVAL = 16;
@@ -53,14 +51,11 @@ const softmax = (arr: number[]): number[] => {
   return expValues.map(val => (val / sumExp));
 };
 
-// Function to apply calibration factors
 const applyCalibration = (scores: number[]): number[] => {
-  // Apply calibration factors
   const calibratedScores = scores.map((score, index) => 
     score * CALIBRATION_FACTORS[EMOTION_LABELS[index]]
   );
   
-  // Normalize to ensure sum is 1
   const sum = calibratedScores.reduce((a, b) => a + b, 0);
   return calibratedScores.map(score => score / sum);
 };
@@ -70,16 +65,17 @@ export function EmotionTracker({
   detectedFace,
   faceBox,
   isTracking,
+  isFaceDetected = true, // Default to true for backward compatibility
   onProcessingStatusChange,
   onEmotionDetected
 }: EmotionTrackerProps) {
   const [status, setStatus] = useState<ProcessingStatus>({
     isProcessing: false,
     fps: 0,
-    modelLoaded: false
+    modelLoaded: false,
+    isInitializing: true
   });
   
-  const [startTime, setStartTime] = useState<number>(0);
   const frameRef = useRef<HTMLCanvasElement>(null);
   const modelRef = useRef<tf.LayersModel | null>(null);
   const processingRef = useRef<boolean>(false);
@@ -90,11 +86,7 @@ export function EmotionTracker({
   useEffect(() => {
     async function loadModel() {
       try {
-        setStatus(prev => ({ 
-          ...prev, 
-          isProcessing: true,
-          isInitializing: true
-        }));
+        setStatus(prev => ({ ...prev, isProcessing: true, isInitializing: true }));
         
         console.log("Loading emotion model...");
         const model = await tf.loadLayersModel('/models/emotion/model.json');
@@ -133,7 +125,8 @@ export function EmotionTracker({
   // Process emotions when face is detected
   useEffect(() => {
     const processEmotions = async () => {
-      if (!stream || !modelRef.current || processingRef.current || !detectedFace) {
+      // Add additional check for face detection
+      if (!stream || !modelRef.current || processingRef.current || !detectedFace || !isFaceDetected) {
         return;
       }
 
@@ -181,19 +174,16 @@ export function EmotionTracker({
 
         // Process scores
         const normalizedScores = softmax(scoresArray);
-        
-        // Apply calibration and thresholds
         const calibratedScores = applyCalibration(normalizedScores);
         const thresholdedScores = calibratedScores.map((score, index) => 
           score > EMOTION_THRESHOLDS[EMOTION_LABELS[index]] ? score : 0
         );
         
-        // Convert to percentages
         const finalScores = thresholdedScores.map(score => score * 100);
 
         // Format results
         const emotionData: EmotionData = {
-          timestamp: now - startTime,
+          timestamp: now,
           scores: {
             neutral: Math.max(0, Math.min(100, finalScores[0])),
             happiness: Math.max(0, Math.min(100, finalScores[1])),
@@ -229,11 +219,10 @@ export function EmotionTracker({
     };
 
     if (isTracking) {
-      setStartTime(performance.now());
       const interval = window.setInterval(processEmotions, EMOTION_INTERVAL);
       return () => window.clearInterval(interval);
     }
-  }, [isTracking, stream, detectedFace, faceBox]);
+  }, [isTracking, stream, detectedFace, faceBox, isFaceDetected]);
 
   // Update status
   useEffect(() => {

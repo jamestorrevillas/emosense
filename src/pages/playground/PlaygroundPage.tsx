@@ -12,10 +12,12 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Play, Square, AlertCircle, Info, Webcam, Camera, Loader2  } from 'lucide-react';
+import { Play, Square, AlertCircle, Info, Webcam, Camera, Loader2 } from 'lucide-react';
 import type { EmotionData, ProcessingStatus, EmotionLabel } from '@/components/emotion/types/emotion';
 import type { EmotionalMoment, EmotionTimelineEntry, OverallAnalysis } from '@/components/emotion/types/analysis';
 import type { Box } from '@vladmandic/face-api';
+import { useTrackingTime } from '@/lib/hooks/useTrackingTime';
+import { TrackingTime } from '@/components/emotion/tracker/TrackingTime';
 
 interface AggregatedEmotionData {
   timestamp: number;
@@ -53,6 +55,11 @@ export function PlaygroundPage() {
     overall: OverallAnalysis | null;
     timeline: EmotionTimelineEntry[];
   }>({ overall: null, timeline: [] });
+  const { elapsedTime, startTimer, stopTimer, pauseTimer, resumeTimer, resetTimer } = useTrackingTime();
+  const [isTimerPaused, setIsTimerPaused] = useState(false);
+  const [isFaceModelLoaded, setIsFaceModelLoaded] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(false);
+  const [isFirstTrackingStart, setIsFirstTrackingStart] = useState(true);
 
   // Cleanup effect
   useEffect(() => {
@@ -74,12 +81,10 @@ export function PlaygroundPage() {
   // Handle camera toggle
   const handleCameraToggle = (enabled: boolean) => {
     if (!enabled) {
-      // Stop tracking if active
       if (isTracking) {
         setIsTracking(false);
       }
       
-      // Stop and cleanup all camera streams
       if (webStream) {
         webStream.getTracks().forEach(track => {
           track.stop();
@@ -87,13 +92,14 @@ export function PlaygroundPage() {
         });
       }
       
-      // Reset all states
       setWebStream(null);
       setStream(null);
       setCurrentEmotion(null);
       setDetectedFace(null);
       setFaceBox(null);
       setIsFaceDetectedStable(false);
+      stopTimer();
+      resetTimer();
     }
     
     setCameraEnabled(enabled);
@@ -184,17 +190,39 @@ export function PlaygroundPage() {
 
   const handleFaceDetectedStable = (detected: boolean) => {
     setIsFaceDetectedStable(detected);
+    if (isTracking) {
+      if (!detected) {
+        pauseTimer();
+        setIsTimerPaused(true);
+      } else {
+        resumeTimer();
+        setIsTimerPaused(false);
+      }
+    }
   };
 
   const startTracking = () => {
+    if (isFirstTrackingStart) {
+      setIsInitializing(true);
+      // Use default FaceTracker lost threshold (10) * 50ms
+      setTimeout(() => {
+        setIsInitializing(false);
+        setIsFirstTrackingStart(false);
+      }, 15 * 100); // Using FaceTracker's default lostThreshold
+    }
+  
     setTrackingStartTime(Date.now());
     setEmotionData([]);
     setAnalysis({ overall: null, timeline: [] });
+    startTimer();
     setIsTracking(true);
+    setIsTimerPaused(false);
   };
 
   const stopTracking = () => {
     setIsTracking(false);
+    stopTimer();
+    setIsTimerPaused(false);
     
     if (aggregatedData.length > 0) {
       try {
@@ -210,17 +238,6 @@ export function PlaygroundPage() {
 
   return (
     <div className="container space-y-8 py-8">
-      {/* Show initialization alert */}
-      {status.isInitializing && (
-        <Alert className="bg-blue-50 border-blue-200">
-          <div className="flex items-center">
-            <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
-            <AlertDescription className="text-blue-700 ml-2">
-              Initializing emotion detection models...
-            </AlertDescription>
-          </div>
-        </Alert>
-      )}
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight mb-1">Playground</h1>
@@ -279,35 +296,45 @@ export function PlaygroundPage() {
                 onStreamReady={handleStreamReady}
                 enabled={cameraEnabled}
               />
-              
+
+              {cameraEnabled && (
+                <TrackingTime 
+                  elapsedTime={elapsedTime}
+                  isTracking={isTracking}
+                  isPaused={isTimerPaused}
+                />
+              )}
+
               {/* Initialization/Face Detection Overlay */}
-              {cameraEnabled && (status.isInitializing || (isTracking && !isFaceDetectedStable)) && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-                  {status.isInitializing ? (
-                    <Alert className="w-[90%] max-w-md border-blue-500 bg-blue-50/95 shadow-lg">
-                      <div className="flex gap-3">
-                        <Loader2 className="h-5 w-5 flex-shrink-0 text-blue-500 animate-spin" />
-                        <AlertDescription className="text-blue-800">
-                          <p>Initializing emotion detection models...</p>
-                          <p className="text-sm mt-1">This may take a few moments.</p>
-                        </AlertDescription>
-                      </div>
-                    </Alert>
-                  ) : (
-                    <Alert 
-                      variant="destructive"
-                      className="w-[90%] max-w-md border-red-500 bg-red-50/95 shadow-lg"
-                    >
-                      <div className="flex gap-3">
-                        <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-500" />
-                        <AlertDescription className="text-red-800">
-                          No face detected. Please face the camera directly.
-                        </AlertDescription>
-                      </div>
-                    </Alert>
-                  )}
-                </div>
+              {cameraEnabled && (
+                (isInitializing || (!isFaceDetectedStable && isTracking && !isInitializing)) && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+                    {isInitializing ? (
+                      <Alert className="w-[90%] max-w-md border-blue-500 bg-blue-50/95 shadow-lg">
+                        <div className="flex gap-3">
+                          <Loader2 className="h-5 w-5 flex-shrink-0 text-blue-500 animate-spin" />
+                          <AlertDescription className="text-blue-800">
+                            <p>Initializing emotion detection models...</p>
+                            <p className="text-sm mt-1">This may take a few moments.</p>
+                          </AlertDescription>
+                        </div>
+                      </Alert>
+                    ) : (
+                      <Alert 
+                        variant="destructive"
+                        className="w-[90%] max-w-md border-red-500 bg-red-50/95 shadow-lg"
+                      >
+                        <div className="flex gap-3">
+                          <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-500" />
+                          <AlertDescription className="text-red-800">
+                            No face detected. Please face the camera directly.
+                          </AlertDescription>
+                        </div>
+                      </Alert>
+                    )}
+                  </div>
+                )
               )}
             </div>
 
@@ -316,7 +343,7 @@ export function PlaygroundPage() {
               <div className="flex justify-center gap-4">
                 <Button
                   onClick={startTracking}
-                  disabled={!stream || isTracking || !status.modelLoaded}
+                  disabled={!stream || isTracking || !status.modelLoaded || !isFaceModelLoaded}
                   size="lg"
                   className="bg-[#011BA1] hover:bg-[#00008B]"
                 >
@@ -342,144 +369,150 @@ export function PlaygroundPage() {
           <CardHeader>
             <CardTitle>Real-time Emotions</CardTitle>
             <CardDescription>Live emotion detection results</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {currentEmotion ? (
-              <div className="space-y-4">
-                <div className="text-xl font-bold text-center">
-                  {currentEmotion.dominantEmotion?.toUpperCase()}
-                </div>
-                <div className="space-y-2">
-                  {Object.entries(currentEmotion.scores).map(([emotion, score]) => (
-                    <div key={emotion} className="flex items-center justify-between">
-                      <span className="capitalize">{emotion}</span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-32 bg-muted rounded-full h-2">
-                          <div 
-                            className="bg-primary h-2 rounded-full transition-all duration-300"
-                            style={{ width: `${Math.max(0, Math.min(100, score))}%` }}
-                          />
+            </CardHeader>
+            <CardContent>
+              {currentEmotion ? (
+                <div className="space-y-4">
+                  <div className="text-3xl font-bold text-center">
+                    {currentEmotion.dominantEmotion?.toUpperCase()}
+                  </div>
+                  <div className="space-y-2">
+                    {Object.entries(currentEmotion.scores).map(([emotion, score]) => (
+                      <div key={emotion} className="flex items-center justify-between">
+                        <span className="capitalize text-xl">{emotion}</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-32 bg-muted rounded-full h-2">
+                            <div 
+                              className="bg-primary h-2 rounded-full transition-all duration-300"
+                              style={{ width: `${Math.max(0, Math.min(100, score))}%` }}
+                            />
+                          </div>
+                          <span className="min-w-[4ch] text-xl">
+                            {Math.round(score)}%
+                          </span>
                         </div>
-                        <span className="min-w-[4ch] text-sm">
-                          {Math.round(score)}%
-                        </span>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <div className="flex items-center justify-center h-[300px] text-center text-muted-foreground">
-                {cameraEnabled ? 
-                  'Start tracking to see real-time emotion detection results' :
-                  'Enable camera to start emotion detection'
-                }
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              ) : (
+                <div className="flex items-center justify-center h-[300px] text-center text-muted-foreground">
+                  {cameraEnabled ? 
+                    'Start tracking to see real-time emotion detection results' :
+                    'Enable camera to start emotion detection'
+                  }
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Analysis Results Section */}
+        <div className="space-y-6">
+          <Separator />
+          
+          {/* Beta Notice Alert */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-700">
+            <p><strong>Note:</strong> The emotion detection feature is currently in beta and experimental. Results may not guarantee 100% accuracy, and emotions with very low intensities might be misdetections. This feature is continuously being improved for better accuracy.</p>
+          </div>
+          
+          {/* Emotion Trend Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Emotional Response Trend</CardTitle>
+              <CardDescription>
+                Visualization of emotion intensities over time during the tracking session
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {analysis.overall ? (
+                <EmotionalResponseTrend data={aggregatedData} />
+              ) : (
+                <div className="aspect-[2/1] flex items-center justify-center border-2 border-dashed rounded-lg bg-muted/50">
+                  <p className="text-muted-foreground text-center px-4">
+                    Complete tracking to see your emotional response trend graph.
+                    <br />
+                    <span className="text-sm">
+                      The graph will show how your emotions varied over the session.
+                    </span>
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Overall Analysis Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Overall Analysis</CardTitle>
+              <CardDescription>
+                Comprehensive analysis of emotional patterns and responses
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {analysis.overall ? (
+                <OverallAnalysisView analysis={analysis.overall} />
+              ) : (
+                <div className="p-8 flex items-center justify-center border-2 border-dashed rounded-lg bg-muted/50">
+                  <p className="text-muted-foreground text-center">
+                    Track your emotions to see an overall analysis of your emotional responses.
+                    <br />
+                    <span className="text-sm">
+                      You'll see dominant emotions, patterns, and key observations.
+                    </span>
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Timeline Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Emotional Timeline</CardTitle>
+              <CardDescription>
+                Moment-by-moment breakdown of emotional states
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {analysis.timeline.length > 0 ? (
+                <EmotionalTimelineView timeline={analysis.timeline} />
+              ) : (
+                <div className="p-8 flex items-center justify-center border-2 border-dashed rounded-lg bg-muted/50">
+                  <p className="text-muted-foreground text-center">
+                    Start tracking to see a detailed timeline of your emotional states.
+                    <br />
+                    <span className="text-sm">
+                      The timeline will show key emotional moments and transitions.
+                    </span>
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Hidden Trackers */}
+        {stream && cameraEnabled && (
+          <>
+            <FaceTracker
+              stream={stream}
+              isTracking={isTracking}
+              onFaceDetected={handleFaceDetected}
+              onFaceDetectedStable={handleFaceDetectedStable}
+              onModelLoaded={setIsFaceModelLoaded}
+            />
+            <EmotionTracker
+              stream={stream}
+              detectedFace={detectedFace}
+              faceBox={faceBox}
+              isTracking={isTracking}
+              isFaceDetected={isFaceDetectedStable}
+              onEmotionDetected={handleEmotionDetected}
+              onProcessingStatusChange={handleProcessingStatusChange}
+            />
+          </>
+        )}
       </div>
-
-      {/* Analysis Results Section */}
-      <div className="space-y-6">
-        <Separator />
-        
-        {/* Emotion Trend Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Emotional Response Trend</CardTitle>
-            <CardDescription>
-              Visualization of emotion intensities over time during the tracking session
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {analysis.overall ? (
-              <EmotionalResponseTrend data={aggregatedData} />
-            ) : (
-              <div className="aspect-[2/1] flex items-center justify-center border-2 border-dashed rounded-lg bg-muted/50">
-                <p className="text-muted-foreground text-center px-4">
-                  Complete tracking to see your emotional response trend graph.
-                  <br />
-                  <span className="text-sm">
-                    The graph will show how your emotions varied over the session.
-                  </span>
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Overall Analysis Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Overall Analysis</CardTitle>
-            <CardDescription>
-              Comprehensive analysis of emotional patterns and responses
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {analysis.overall ? (
-              <OverallAnalysisView analysis={analysis.overall} />
-            ) : (
-              <div className="p-8 flex items-center justify-center border-2 border-dashed rounded-lg bg-muted/50">
-                <p className="text-muted-foreground text-center">
-                  Track your emotions to see an overall analysis of your emotional responses.
-                  <br />
-                  <span className="text-sm">
-                    You'll see dominant emotions, patterns, and key observations.
-                  </span>
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Timeline Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Emotional Timeline</CardTitle>
-            <CardDescription>
-              Moment-by-moment breakdown of emotional states
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {analysis.timeline.length > 0 ? (
-              <EmotionalTimelineView timeline={analysis.timeline} />
-            ) : (
-              <div className="p-8 flex items-center justify-center border-2 border-dashed rounded-lg bg-muted/50">
-                <p className="text-muted-foreground text-center">
-                  Start tracking to see a detailed timeline of your emotional states.
-                  <br />
-                  <span className="text-sm">
-                    The timeline will show key emotional moments and transitions.
-                  </span>
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Hidden Trackers */}
-      {stream && cameraEnabled && (
-        <>
-          <FaceTracker
-            stream={stream}
-            isTracking={isTracking}
-            detectionThreshold={5}
-            onFaceDetected={handleFaceDetected}
-            onFaceDetectedStable={handleFaceDetectedStable}
-          />
-          <EmotionTracker
-            stream={stream}
-            detectedFace={detectedFace}
-            faceBox={faceBox}
-            isTracking={isTracking}
-            onEmotionDetected={handleEmotionDetected}
-            onProcessingStatusChange={handleProcessingStatusChange}
-          />
-        </>
-      )}
-    </div>
-  );
+    );
 }
