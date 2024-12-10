@@ -132,15 +132,17 @@ export function ShareDialog({ project }: ShareDialogProps) {
             {/* Share Link */}
             <div className="space-y-3">
               <Label>Share Link</Label>
-              <div className="flex space-x-2">
+              <div className="flex items-center w-full space-x-2">
                 <div className="flex-1 flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl">
                   <Link2 className="h-4 w-4 text-slate-400" />
-                  <Input
-                    value={shareUrl}
-                    readOnly
-                    placeholder="Generate a link to share"
-                    className="border-0 bg-transparent p-0 focus-visible:ring-0"
-                  />
+                  <div className="flex-1 overflow-hidden">
+                    <Input
+                      value={shareUrl}
+                      readOnly
+                      placeholder="Generate a link to share"
+                      className="border-0 bg-transparent p-0 focus-visible:ring-0 w-full text-ellipsis"
+                    />
+                  </div>
                 </div>
                 {shareUrl ? (
                   <Button 
