@@ -14,6 +14,7 @@ export function useVideo({ onComplete }: UseVideoProps = {}) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const completedRef = useRef(false); // Track if video has completed
 
   // Format time from seconds to MM:SS
   const formatTime = (time: number) => {
@@ -22,63 +23,65 @@ export function useVideo({ onComplete }: UseVideoProps = {}) {
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  // Handle time update
+  // Handle time update with completion check
   const handleTimeUpdate = useCallback(() => {
-    if (videoRef.current) {
-      const currentTime = videoRef.current.currentTime;
-      const duration = videoRef.current.duration;
-      const progress = (currentTime / duration) * 100;
-      setProgress(progress);
+    if (!videoRef.current) return;
+    
+    const currentTime = videoRef.current.currentTime;
+    const duration = videoRef.current.duration;
+    const progress = (currentTime / duration) * 100;
+    
+    setProgress(progress);
 
-      // Check if video is complete
-      if (progress >= 99.5 && onComplete) {
-        onComplete();
-      }
+    // Check for completion only once when reaching end
+    if (progress >= 99.5 && !completedRef.current) {
+      completedRef.current = true;
+      onComplete?.();
     }
   }, [onComplete]);
 
-  // Handle seeking
+  // Handle seeking with position validation
   const handleSeek = useCallback((value: number) => {
-    if (videoRef.current) {
-      const time = (value / 100) * videoRef.current.duration;
-      videoRef.current.currentTime = time;
-      setProgress(value);
-    }
+    if (!videoRef.current) return;
+    
+    const time = (value / 100) * videoRef.current.duration;
+    // Ensure seeking doesn't go past the end
+    videoRef.current.currentTime = Math.min(time, videoRef.current.duration - 0.1);
+    setProgress(value);
   }, []);
 
-  // Handle volume change
+  // Handle volume change with bounds
   const handleVolumeChange = useCallback((value: number) => {
-    if (videoRef.current) {
-      videoRef.current.volume = value;
-      setVolume(value);
-    }
+    if (!videoRef.current) return;
+    
+    const boundedValue = Math.max(0, Math.min(1, value));
+    videoRef.current.volume = boundedValue;
+    setVolume(boundedValue);
   }, []);
 
-  // Handle fullscreen
+  // Handle fullscreen with proper cleanup
   const toggleFullscreen = useCallback(async () => {
-    if (!document.fullscreenElement && containerRef.current) {
-      try {
+    try {
+      if (!document.fullscreenElement && containerRef.current) {
         await containerRef.current.requestFullscreen();
         setIsFullscreen(true);
-      } catch (err) {
-        console.error('Error attempting to enable fullscreen:', err);
-      }
-    } else if (document.fullscreenElement) {
-      try {
+      } else if (document.fullscreenElement) {
         await document.exitFullscreen();
         setIsFullscreen(false);
-      } catch (err) {
-        console.error('Error attempting to exit fullscreen:', err);
       }
+    } catch (err) {
+      console.error('Fullscreen error:', err);
     }
   }, []);
 
-  // Handle metadata loaded
+  // Handle video metadata loaded
   const handleLoadedMetadata = useCallback(() => {
-    if (videoRef.current) {
-      setDuration(videoRef.current.duration);
-      setLoading(false);
-    }
+    if (!videoRef.current) return;
+    
+    setDuration(videoRef.current.duration);
+    setLoading(false);
+    // Reset completion state when video is loaded
+    completedRef.current = false;
   }, []);
 
   // Handle video error
@@ -98,6 +101,11 @@ export function useVideo({ onComplete }: UseVideoProps = {}) {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
     };
   }, []);
+
+  // Reset completion state when video source changes
+  useEffect(() => {
+    completedRef.current = false;
+  }, [videoRef.current?.src]);
 
   return {
     videoRef,

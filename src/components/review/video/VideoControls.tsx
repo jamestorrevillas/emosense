@@ -63,7 +63,7 @@ export const VideoControls = ({
               variant="ghost"
               size="icon"
               className="h-8 w-8 text-white hover:bg-white/20"
-              onClick={onPlayPause}
+              onClick={() => onPlayPause()}
               disabled={loading}
             >
               {isPlaying ? (

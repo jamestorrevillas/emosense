@@ -1,5 +1,5 @@
 // src/components/review/steps/VideoStep.tsx
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useReview } from "@/contexts/ReviewContext";
@@ -18,15 +18,16 @@ export function VideoStep() {
   const [faceBox, setFaceBox] = useState<Box | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isTrackingEmotions, setIsTrackingEmotions] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [isInitializing, setIsInitializing] = useState(false);
 
-  // Refs for tracking emotional data
+  // Refs for tracking
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const emotionDataRef = useRef<EmotionDataPoint[]>([]);
   const activePlayStartRef = useRef<number>(0);
   const totalPlayTimeRef = useRef<number>(0);
   const videoStartRef = useRef<number>(0);
-  
+  const lastPlayPositionRef = useRef<number>(0);
+
   // Handle emotion tracking state
   useEffect(() => {
     if (isPlaying) {
@@ -44,17 +45,16 @@ export function VideoStep() {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden && isPlaying) {
+        lastPlayPositionRef.current = videoRef.current?.currentTime || 0;
         setIsPlaying(false);
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [isPlaying]);
 
-  const handleFaceDetected = (detected: boolean, face?: HTMLCanvasElement, box?: Box) => {
+  const handleFaceDetected = useCallback((detected: boolean, face?: HTMLCanvasElement, box?: Box) => {
     if (detected && face) {
       setDetectedFace(face);
       setFaceBox(box || null);
@@ -62,57 +62,49 @@ export function VideoStep() {
       setDetectedFace(null);
       setFaceBox(null);
     }
-  };
+  }, []);
 
-  // Track fullscreen state changes
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      const fullscreenElement = document.fullscreenElement;
-      setIsFullscreen(!!fullscreenElement);
-
-      // Exit fullscreen if face is not detected
-      if (fullscreenElement && !responses.isFaceDetected) {
-        document.exitFullscreen().catch(err => {
-          console.error('Error exiting fullscreen:', err);
-        });
-      }
-    };
-
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-    };
-  }, [responses.isFaceDetected]);
-
-  const handleFaceDetectedStable = (detected: boolean) => {
+  const handleFaceDetectedStable = useCallback((detected: boolean) => {
     updateResponses({ isFaceDetected: detected });
-    if (!detected && isPlaying) {
-      setIsPlaying(false);
-      // Exit fullscreen if face is not detected
+    
+    if (!detected) {
+      // Store position if video is playing
+      if (isPlaying) {
+        lastPlayPositionRef.current = videoRef.current?.currentTime || 0;
+        setIsPlaying(false);
+      }
+  
+      // Exit fullscreen regardless of play state
       if (document.fullscreenElement) {
-        document.exitFullscreen().catch(err => {
-          console.error('Error exiting fullscreen:', err);
-        });
+        document.exitFullscreen().catch(console.error);
       }
     }
-  };
+  }, [isPlaying, updateResponses]);
 
-  // Initialize on component mount
-  useEffect(() => {
-    setIsInitializing(true);
-    setTimeout(() => {
-      setIsInitializing(false);
-    }, 15 * 100); // Using FaceTracker's default lostThreshold
-  }, []); // Run once on mount
+  // Handle play attempt
+  const handlePlayAttempt = useCallback((wantsToPlay: boolean) => {
+    // Log for debugging
+    console.log('Play attempt:', { wantsToPlay, isFaceDetected: responses.isFaceDetected });
 
-  const handlePlayAttempt = (wantsToPlay: boolean) => {
     if (wantsToPlay && !responses.isFaceDetected) {
+      console.log('Blocked play: no face detected');
       return;
     }
-    setIsPlaying(wantsToPlay);
-  };
 
-  const handleEmotionDetected = (data: EmotionData) => {
+    // If trying to play and we have a stored position
+    if (wantsToPlay && lastPlayPositionRef.current > 0) {
+      console.log('Resuming from position:', lastPlayPositionRef.current);
+      if (videoRef.current) {
+        videoRef.current.currentTime = lastPlayPositionRef.current;
+      }
+      lastPlayPositionRef.current = 0;
+    }
+
+    setIsPlaying(wantsToPlay);
+    setIsTrackingEmotions(wantsToPlay);
+  }, [responses.isFaceDetected]);
+
+  const handleEmotionDetected = useCallback((data: EmotionData) => {
     if (!isTrackingEmotions) return;
 
     const currentTime = Date.now();
@@ -130,16 +122,17 @@ export function VideoStep() {
 
     emotionDataRef.current.push(dataPoint);
     updateResponses({ currentEmotion: data });
-  };
+  }, [isTrackingEmotions, updateResponses]);
 
-  const handleVideoStart = () => {
+  const handleVideoStart = useCallback(() => {
     videoStartRef.current = Date.now();
     activePlayStartRef.current = Date.now();
     totalPlayTimeRef.current = 0;
     emotionDataRef.current = [];
-  };
+    lastPlayPositionRef.current = 0;
+  }, []);
 
-  const handleVideoComplete = async () => {
+  const handleVideoComplete = useCallback(async () => {
     const finalPlayDuration = totalPlayTimeRef.current + 
       (activePlayStartRef.current > 0 ? Date.now() - activePlayStartRef.current : 0);
 
@@ -153,15 +146,30 @@ export function VideoStep() {
 
     updateResponses({ emotionResponse });
 
-    if (projectData?.quickRating.enabled) {
-      setTimeout(nextStep, 500);
-    } else {
-      setTimeout(() => {
+    // Delay to ensure smooth transition
+    setTimeout(() => {
+      if (projectData.quickRating.enabled) {
+        nextStep();
+      } else {
         nextStep();
         nextStep(); // Skip quick-rating step
-      }, 500);
-    }
-  };
+      }
+    }, 500);
+  }, [projectData.id, projectData.quickRating.enabled, nextStep, updateResponses]);
+
+  // Initialize
+  useEffect(() => {
+    setIsInitializing(true);
+    const timer = setTimeout(() => {
+      setIsInitializing(false);
+    }, 1500);
+
+    return () => {
+      clearTimeout(timer);
+      setIsPlaying(false);
+      setIsTrackingEmotions(false);
+    };
+  }, []);
 
   return (
     <div className="max-w-4xl mx-auto space-y-4">
@@ -186,7 +194,7 @@ export function VideoStep() {
             
             {/* Face Detection Overlay */}
             {responses.cameraStream && (
-              (isInitializing || (!responses.isFaceDetected && !isFullscreen)) && (
+              (isInitializing || !responses.isFaceDetected) && (  // Remove the fullscreen check
                 <div className="absolute inset-0 flex items-center justify-center transition-all duration-300 z-[60]">
                   <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
                   {isInitializing ? (
