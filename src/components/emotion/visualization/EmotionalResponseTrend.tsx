@@ -25,6 +25,7 @@ interface EmotionalResponseTrendProps {
   data: AggregatedEmotionData[];
 }
 
+// Emotion colors for consistent visualization
 const EMOTION_COLORS = {
   happiness: "#FFD700",   // Bright gold
   surprise: "#FF8C00",    // Dark orange
@@ -37,6 +38,7 @@ const EMOTION_COLORS = {
 };
 
 export function EmotionalResponseTrend({ data }: EmotionalResponseTrendProps) {
+  // Format data for chart
   const chartData = data.map(point => ({
     timestamp: point.timestamp,
     ...Object.fromEntries(
@@ -45,6 +47,7 @@ export function EmotionalResponseTrend({ data }: EmotionalResponseTrendProps) {
     totalResponses: point.totalResponses
   }));
 
+  // Get all unique emotions
   const emotions = Array.from(
     new Set(data.flatMap(point => point.emotions.map(e => e.emotion)))
   );
@@ -52,74 +55,70 @@ export function EmotionalResponseTrend({ data }: EmotionalResponseTrendProps) {
   return (
     <>
       <Card>
-        <CardContent className="pt-6">
-          {/* Add a scrollable container for the chart */}
-          <div className="w-full overflow-x-auto pb-4">
-            {/* Set minimum width to ensure readability on mobile */}
-            <div className="min-w-[800px] h-[400px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={chartData}
-                  margin={{ top: 20, right: 30, left: 0, bottom: 60 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis 
-                    dataKey="timestamp"
-                    tickFormatter={(value) => {
-                      const seconds = Math.floor(value / 1000);
-                      const minutes = Math.floor(seconds / 60);
-                      const remainingSeconds = seconds % 60;
-                      return `${minutes}:${String(remainingSeconds).padStart(2, '0')}`;
-                    }}
-                    label={{ 
-                      value: 'Time (MM:SS)', 
-                      position: 'bottom',
-                      offset: 20
-                    }}
+        <CardContent className="pt-6 space-y-4">
+          <div className="h-[400px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                data={chartData}
+                margin={{ top: 20, right: 30, left: 0, bottom: 60 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis 
+                  dataKey="timestamp"
+                  tickFormatter={(value) => {
+                    const seconds = Math.floor(value / 1000);
+                    const minutes = Math.floor(seconds / 60);
+                    const remainingSeconds = seconds % 60;
+                    return `${minutes}:${String(remainingSeconds).padStart(2, '0')}`;
+                  }}
+                  label={{ 
+                    value: 'Time (MM:SS)', 
+                    position: 'bottom',
+                    offset: 20
+                  }}
+                />
+                <YAxis 
+                  label={{ 
+                    value: 'Average Intensity (%)', 
+                    angle: -90, 
+                    position: 'insideLeft', 
+                    offset: 10 
+                  }}
+                  domain={[0, 100]}
+                />
+                <Tooltip 
+                  formatter={(value: number) => `${value.toFixed(2)}%`}
+                  labelFormatter={(value: number) => {
+                    const seconds = Math.floor(value / 1000);
+                    const minutes = Math.floor(seconds / 60);
+                    const remainingSeconds = seconds % 60;
+                    return `${minutes}:${String(remainingSeconds).padStart(2, '0')}`;
+                  }}
+                />
+                <Legend 
+                  verticalAlign="bottom" 
+                  height={36}
+                  wrapperStyle={{ 
+                    paddingTop: '40px' // Add padding above legend to create space from axis label
+                  }}
+                />
+                
+                {emotions.map(emotion => (
+                  <Line
+                    key={emotion}
+                    type="monotone"
+                    dataKey={emotion}
+                    name={emotion.charAt(0).toUpperCase() + emotion.slice(1)}
+                    stroke={EMOTION_COLORS[emotion as keyof typeof EMOTION_COLORS]}
+                    dot={false}
+                    strokeWidth={2}
                   />
-                  <YAxis 
-                    label={{ 
-                      value: 'Average Intensity (%)', 
-                      angle: -90, 
-                      position: 'insideLeft', 
-                      offset: 10 
-                    }}
-                    domain={[0, 100]}
-                  />
-                  <Tooltip 
-                    formatter={(value: number) => `${value.toFixed(2)}%`}
-                    labelFormatter={(value: number) => {
-                      const seconds = Math.floor(value / 1000);
-                      const minutes = Math.floor(seconds / 60);
-                      const remainingSeconds = seconds % 60;
-                      return `${minutes}:${String(remainingSeconds).padStart(2, '0')}`;
-                    }}
-                  />
-                  <Legend 
-                    verticalAlign="bottom" 
-                    height={36}
-                    wrapperStyle={{ 
-                      paddingTop: '40px'
-                    }}
-                  />
-                  
-                  {emotions.map(emotion => (
-                    <Line
-                      key={emotion}
-                      type="monotone"
-                      dataKey={emotion}
-                      name={emotion.charAt(0).toUpperCase() + emotion.slice(1)}
-                      stroke={EMOTION_COLORS[emotion as keyof typeof EMOTION_COLORS]}
-                      dot={false}
-                      strokeWidth={2}
-                    />
-                  ))}
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
           </div>
         </CardContent>
       </Card>
     </>
   );
-}
+}  

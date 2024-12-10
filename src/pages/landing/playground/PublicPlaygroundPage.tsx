@@ -12,14 +12,12 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Play, Square, AlertCircle, Info, Webcam, Camera, ChevronLeft, Loader2 } from 'lucide-react';
+import { Play, Square, AlertCircle, Info, Webcam, Camera, ChevronLeft, Loader2, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { EmotionData, ProcessingStatus, EmotionLabel } from '@/components/emotion/types/emotion';
 import type { EmotionalMoment, EmotionTimelineEntry, OverallAnalysis } from '@/components/emotion/types/analysis';
 import type { Box } from '@vladmandic/face-api';
 import { Container } from '../sections/Container';
-import { useTrackingTime } from '@/lib/hooks/useTrackingTime';
-import { TrackingTime } from '@/components/emotion/tracker/TrackingTime';
 
 interface AggregatedEmotionData {
   timestamp: number;
@@ -57,8 +55,6 @@ export function PublicPlaygroundPage() {
     overall: OverallAnalysis | null;
     timeline: EmotionTimelineEntry[];
   }>({ overall: null, timeline: [] });
-  const { elapsedTime, startTimer, stopTimer, pauseTimer, resumeTimer, resetTimer } = useTrackingTime();
-  const [isTimerPaused, setIsTimerPaused] = useState(false);
   const [isFaceModelLoaded, setIsFaceModelLoaded] = useState(false);
   const [isInitializing, setIsInitializing] = useState(false);
   const [isFirstTrackingStart, setIsFirstTrackingStart] = useState(true);
@@ -100,9 +96,6 @@ export function PublicPlaygroundPage() {
       setDetectedFace(null);
       setFaceBox(null);
       setIsFaceDetectedStable(false);
-      // Add these lines to reset timer
-      stopTimer();
-      resetTimer();
     }
     
     setCameraEnabled(enabled);
@@ -193,15 +186,6 @@ export function PublicPlaygroundPage() {
 
   const handleFaceDetectedStable = (detected: boolean) => {
     setIsFaceDetectedStable(detected);
-    if (isTracking) {
-      if (!detected) {
-        pauseTimer();
-        setIsTimerPaused(true);
-      } else {
-        resumeTimer();
-        setIsTimerPaused(false);
-      }
-    }
   };
 
   const startTracking = () => {
@@ -217,15 +201,11 @@ export function PublicPlaygroundPage() {
     setTrackingStartTime(Date.now());
     setEmotionData([]);
     setAnalysis({ overall: null, timeline: [] });
-    startTimer();
     setIsTracking(true);
-    setIsTimerPaused(false);
   };
 
   const stopTracking = () => {
     setIsTracking(false);
-    stopTimer();
-    setIsTimerPaused(false);
     
     if (aggregatedData.length > 0) {
       try {
@@ -312,15 +292,6 @@ export function PublicPlaygroundPage() {
                   onStreamReady={handleStreamReady}
                   enabled={cameraEnabled}
                 />
-
-                {cameraEnabled && (
-                  <TrackingTime 
-                    elapsedTime={elapsedTime}
-                    isTracking={isTracking}
-                    isPaused={isTimerPaused}
-                  />
-                )}
-
                 
                 {/* Initialization/Face Detection Overlay */}
                 {cameraEnabled && (
@@ -358,25 +329,34 @@ export function PublicPlaygroundPage() {
               {/* Controls Section */}
               {cameraEnabled && (
                 <div className="flex justify-center gap-4">
-                  <Button
-                    onClick={startTracking}
-                    disabled={!stream || isTracking || !status.modelLoaded || !isFaceModelLoaded}
-                    size="lg"
-                    className="bg-[#011BA1] hover:bg-[#00008B]"
-                  >
-                    <Play className="mr-2 h-4 w-4" />
-                    Start Tracking
-                  </Button>
-                  <Button
-                    onClick={stopTracking}
-                    disabled={!isTracking}
-                    variant="destructive"
-                    size="lg"
-                  >
-                    <Square className="mr-2 h-4 w-4" />
-                    Stop Tracking
-                  </Button>
-                </div>
+                <Button
+                  onClick={startTracking}
+                  disabled={!stream || isTracking || !status.modelLoaded || !isFaceModelLoaded}
+                  size="lg"
+                  className="bg-[#011BA1] hover:bg-[#00008B]"
+                >
+                  {isTracking ? (
+                    <>
+                      <Clock className="mr-2 h-4 w-4 animate-pulse" />
+                      Recording...
+                    </>
+                  ) : (
+                    <>
+                      <Play className="mr-2 h-4 w-4" />
+                      Start Recording
+                    </>
+                  )}
+                </Button>
+                <Button
+                  onClick={stopTracking}
+                  disabled={!isTracking}
+                  variant="destructive"
+                  size="lg"
+                >
+                  <Square className="mr-2 h-4 w-4" />
+                  Stop Recording
+                </Button>
+              </div>
               )}
             </CardContent>
           </Card>

@@ -16,8 +16,6 @@ import { Play, Square, AlertCircle, Info, Webcam, Camera, Loader2 } from 'lucide
 import type { EmotionData, ProcessingStatus, EmotionLabel } from '@/components/emotion/types/emotion';
 import type { EmotionalMoment, EmotionTimelineEntry, OverallAnalysis } from '@/components/emotion/types/analysis';
 import type { Box } from '@vladmandic/face-api';
-import { useTrackingTime } from '@/lib/hooks/useTrackingTime';
-import { TrackingTime } from '@/components/emotion/tracker/TrackingTime';
 
 interface AggregatedEmotionData {
   timestamp: number;
@@ -55,8 +53,6 @@ export function PlaygroundPage() {
     overall: OverallAnalysis | null;
     timeline: EmotionTimelineEntry[];
   }>({ overall: null, timeline: [] });
-  const { elapsedTime, startTimer, stopTimer, pauseTimer, resumeTimer, resetTimer } = useTrackingTime();
-  const [isTimerPaused, setIsTimerPaused] = useState(false);
   const [isFaceModelLoaded, setIsFaceModelLoaded] = useState(false);
   const [isInitializing, setIsInitializing] = useState(false);
   const [isFirstTrackingStart, setIsFirstTrackingStart] = useState(true);
@@ -98,8 +94,6 @@ export function PlaygroundPage() {
       setDetectedFace(null);
       setFaceBox(null);
       setIsFaceDetectedStable(false);
-      stopTimer();
-      resetTimer();
     }
     
     setCameraEnabled(enabled);
@@ -190,15 +184,6 @@ export function PlaygroundPage() {
 
   const handleFaceDetectedStable = (detected: boolean) => {
     setIsFaceDetectedStable(detected);
-    if (isTracking) {
-      if (!detected) {
-        pauseTimer();
-        setIsTimerPaused(true);
-      } else {
-        resumeTimer();
-        setIsTimerPaused(false);
-      }
-    }
   };
 
   const startTracking = () => {
@@ -214,15 +199,11 @@ export function PlaygroundPage() {
     setTrackingStartTime(Date.now());
     setEmotionData([]);
     setAnalysis({ overall: null, timeline: [] });
-    startTimer();
     setIsTracking(true);
-    setIsTimerPaused(false);
   };
 
   const stopTracking = () => {
     setIsTracking(false);
-    stopTimer();
-    setIsTimerPaused(false);
     
     if (aggregatedData.length > 0) {
       try {
@@ -296,14 +277,6 @@ export function PlaygroundPage() {
                 onStreamReady={handleStreamReady}
                 enabled={cameraEnabled}
               />
-
-              {cameraEnabled && (
-                <TrackingTime 
-                  elapsedTime={elapsedTime}
-                  isTracking={isTracking}
-                  isPaused={isTimerPaused}
-                />
-              )}
 
               {/* Initialization/Face Detection Overlay */}
               {cameraEnabled && (
