@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Loader2, ArrowLeft, Mail, Lock, KeyRound, CheckCircle2 } from "lucide-react";
 import { checkEmailExists, sendConfirmationCode, verifyCode, resetPassword } from "@/lib/firebase/passwordReset";
+import logoImage from '@/assets/images/logo.png'
 
 export const ForgetPasswordPage = () => {
   const navigate = useNavigate();
@@ -143,7 +144,7 @@ export const ForgetPasswordPage = () => {
         <div className="text-center mb-6">
           <div className="flex items-center justify-center gap-2 mb-2">
             <img 
-              src="/src/assets/images/logo.png" 
+              src={logoImage} 
               alt="EmoSense Logo" 
               className="h-8 w-auto"
             />
