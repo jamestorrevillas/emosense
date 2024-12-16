@@ -6,6 +6,7 @@ import { SignUpPage } from '@/pages/auth/SignUpPage';
 import { ForgetPasswordPage } from '@/pages/auth/ForgetPasswordPage';
 import { Layout } from '@/components/shared/Layout';
 import { ReviewLayout } from '@/components/shared/Layout/ReviewLayout';
+import { AnimatedLayout } from '@/components/shared/Layout/AnimatedLayout';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { ProjectListPage } from '@/pages/projects/ProjectListPage';
 import { NewProjectPage } from '@/pages/projects/NewProjectPage';
@@ -15,7 +16,7 @@ import { ReviewPage } from '@/pages/review/ReviewPage';
 import { SettingsPage } from '@/pages/settings/SettingsPage';
 import { PlaygroundPage } from '@/pages/playground/PlaygroundPage';
 import LandingPage from '@/pages/landing/LandingPage';
-import { PublicPlaygroundPage } from '@pages/landing/playground/PublicPlaygroundPage'
+import { PublicPlaygroundPage } from '@/pages/landing/playground/PublicPlaygroundPage';
 
 // Project routes with standard layout
 const protectedRoutes: RouteObject[] = [
@@ -32,36 +33,37 @@ const protectedRoutes: RouteObject[] = [
         element: <Navigate to="/app/dashboard" replace />
       },
       {
-        path: 'dashboard',
-        element: <DashboardPage />
-      },
-      {
-        path: 'projects',
-        element: <ProjectListPage />
-      },
-      {
-        path: 'projects/new',
-        element: <NewProjectPage />
-      },
-      {
-        path: 'projects/:id',
-        element: <ProjectDetailPage />
-      },
-      {
-        path: 'projects/:id/edit',
-        element: <EditProjectPage />
-      },
-      {
-        path: 'analytics',
-        element: <div>Analytics Page (Coming Soon)</div>
-      },
-      {
-        path: 'playground',
-        element: <PlaygroundPage />
-      },
-      {
-        path: 'settings',
-        element: <SettingsPage />
+        element: <AnimatedLayout />,
+        children: [
+          {
+            path: 'dashboard',
+            element: <DashboardPage />
+          },
+          {
+            path: 'projects',
+            element: <ProjectListPage />
+          },
+          {
+            path: 'projects/new',
+            element: <NewProjectPage />
+          },
+          {
+            path: 'projects/:id',
+            element: <ProjectDetailPage />
+          },
+          {
+            path: 'projects/:id/edit',
+            element: <EditProjectPage />
+          },
+          {
+            path: 'playground',
+            element: <PlaygroundPage />
+          },
+          {
+            path: 'settings',
+            element: <SettingsPage />
+          }
+        ]
       }
     ]
   }
@@ -74,43 +76,57 @@ const reviewRoutes: RouteObject[] = [
     element: <ReviewLayout />,
     children: [
       {
-        path: ':projectId/preview',
-        element: (
-          <ProtectedRoute>
-            <ReviewPage mode="preview" />
-          </ProtectedRoute>
-        )
-      },
-      {
-        path: ':projectId/:token',
-        element: <ReviewPage mode="public" />
+        element: <AnimatedLayout />,
+        children: [
+          {
+            path: ':projectId/preview',
+            element: (
+              <ProtectedRoute>
+                <ReviewPage mode="preview" />
+              </ProtectedRoute>
+            )
+          },
+          {
+            path: ':projectId/:token',
+            element: <ReviewPage mode="public" />
+          }
+        ]
       }
     ]
   }
 ];
 
-// Auth routes
+// Public routes
 const publicRoutes: RouteObject[] = [
   {
     path: '/auth',
     children: [
       {
-        path: 'signin',
-        element: <SignInPage />
-      },
-      {
-        path: 'signup',
-        element: <SignUpPage />
-      },
-      {
-        path: 'forgot-password',
-        element: <ForgetPasswordPage />
+        element: <AnimatedLayout />,
+        children: [
+          {
+            path: 'signin',
+            element: <SignInPage />
+          },
+          {
+            path: 'signup',
+            element: <SignUpPage />
+          },
+          {
+            path: 'forgot-password',
+            element: <ForgetPasswordPage />
+          }
+        ]
       }
     ]
   },
   {
     path: '/playground',
-    element: <PublicPlaygroundPage />
+    element: (
+      <AnimatedLayout>
+        <PublicPlaygroundPage />
+      </AnimatedLayout>
+    )
   }
 ];
 
@@ -118,7 +134,11 @@ const publicRoutes: RouteObject[] = [
 export const router = createBrowserRouter([
   {
     path: '/',
-    element: <LandingPage />
+    element: (
+      <AnimatedLayout>
+        <LandingPage />
+      </AnimatedLayout>
+    )
   },
   ...protectedRoutes,
   ...reviewRoutes,
