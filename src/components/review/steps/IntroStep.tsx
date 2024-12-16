@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { useReview } from "@/contexts/ReviewContext";
 import { Clock, Video, Star, ClipboardList } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export const IntroStep = () => {
   const { nextStep, projectData } = useReview();
@@ -39,6 +40,20 @@ export const IntroStep = () => {
     }] : [])
   ];
 
+  // Determine grid columns based on number of steps
+  const getGridClass = (stepCount: number) => {
+    switch (stepCount) {
+      case 1:
+        return 'max-w-sm mx-auto'; // Single centered column
+      case 2:
+        return 'grid-cols-1 md:grid-cols-2 max-w-2xl mx-auto'; // Two columns on larger screens
+      case 3:
+        return 'grid-cols-1 md:grid-cols-3 max-w-4xl mx-auto'; // Three columns on larger screens
+      default:
+        return '';
+    }
+  };
+
   return (
     <Card className="max-w-2xl mx-auto">
       <CardHeader className="text-center">
@@ -57,14 +72,22 @@ export const IntroStep = () => {
 
         {/* Process Overview */}
         {processSteps.length > 0 && (
-          <div className={`grid gap-4 ${processSteps.length === 3 ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
+          <div className={cn(
+            "grid gap-4",
+            getGridClass(processSteps.length)
+          )}>
             {processSteps.map((step) => (
               <div 
                 key={step.key} 
-                className="flex flex-col items-center gap-2 p-4 rounded-lg bg-accent/50"
+                className={cn(
+                  "flex flex-col items-center gap-2 p-4 rounded-lg bg-accent/50 transition-all duration-200",
+                  "hover:bg-accent/70"
+                )}
               >
-                <step.icon className="h-6 w-6 text-primary" />
-                <h3 className="font-medium">{step.title}</h3>
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                  <step.icon className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="font-medium text-lg">{step.title}</h3>
                 <p className="text-sm text-center text-muted-foreground">
                   {step.description}
                 </p>
@@ -83,7 +106,11 @@ export const IntroStep = () => {
 
         {/* Start Button */}
         <div className="flex justify-center pt-4">
-          <Button size="lg" onClick={nextStep}>
+          <Button 
+            size="lg" 
+            onClick={nextStep}
+            className="bg-[#011BA1] hover:bg-[#00008B]"
+          >
             Start Review
           </Button>
         </div>
