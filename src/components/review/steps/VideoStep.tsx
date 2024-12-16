@@ -1,4 +1,4 @@
-// src/components/review/steps/VideoStep.tsx
+// src/components/review/video/VideoStep.tsx
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { collection, doc, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
@@ -15,7 +15,7 @@ import type { EmotionData } from '@/components/emotion/types/emotion';
 import type { EmotionDataPoint, EmotionResponse } from '@/types/response';
 
 export function VideoStep() {
-  const { nextStep, projectData, responses, updateResponses } = useReview();
+  const { nextStep, projectData, responses, updateResponses, mode } = useReview();
   const [detectedFace, setDetectedFace] = useState<HTMLCanvasElement | null>(null);
   const [faceBox, setFaceBox] = useState<Box | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -161,7 +161,7 @@ export function VideoStep() {
             quickRating: null,
             survey: {}
           },
-          mode: 'public',
+          mode: mode,
           metadata: {
             userAgent: navigator.userAgent,
             platform: navigator.platform,
@@ -186,14 +186,17 @@ export function VideoStep() {
       }
     }
   
-    // Otherwise proceed normally
+    // Otherwise proceed based on what's configured
     if (projectData.quickRating?.enabled) {
       setTimeout(nextStep, 500);
-    } else {
+    } else if (projectData.survey?.questions?.length) {
       setTimeout(() => {
         nextStep();
         nextStep(); // Skip quick-rating step
       }, 500);
+    } else {
+      // Safety fallback
+      setTimeout(nextStep, 500);
     }
   };
 
@@ -234,7 +237,7 @@ export function VideoStep() {
             
             {/* Face Detection Overlay */}
             {responses.cameraStream && (
-              (isInitializing || !responses.isFaceDetected) && (  // Remove the fullscreen check
+              (isInitializing || !responses.isFaceDetected) && (
                 <div className="absolute inset-0 flex items-center justify-center transition-all duration-300 z-[60]">
                   <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
                   {isInitializing ? (
