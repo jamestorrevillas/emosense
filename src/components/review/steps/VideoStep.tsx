@@ -1,5 +1,7 @@
 // src/components/review/steps/VideoStep.tsx
 import { useEffect, useState, useRef, useCallback } from 'react';
+import { collection, doc, addDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase/config';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useReview } from "@/contexts/ReviewContext";
@@ -132,10 +134,10 @@ export function VideoStep() {
     lastPlayPositionRef.current = 0;
   }, []);
 
-  const handleVideoComplete = useCallback(async () => {
+  const handleVideoComplete = async () => {
     const finalPlayDuration = totalPlayTimeRef.current + 
       (activePlayStartRef.current > 0 ? Date.now() - activePlayStartRef.current : 0);
-
+  
     const emotionResponse: EmotionResponse = {
       videoId: projectData.id,
       duration: finalPlayDuration,
@@ -143,19 +145,57 @@ export function VideoStep() {
       endTime: new Date().toISOString(),
       data: emotionDataRef.current
     };
-
+  
     updateResponses({ emotionResponse });
-
-    // Delay to ensure smooth transition
-    setTimeout(() => {
-      if (projectData.quickRating.enabled) {
-        nextStep();
-      } else {
+  
+    // Submit response directly if no quick rating or survey questions
+    if (!projectData.quickRating?.enabled && (!projectData.survey?.questions?.length)) {
+      try {
+        const finalResponse = {
+          projectId: projectData.id,
+          status: 'completed',
+          startedAt: new Date(videoStartRef.current).toISOString(),
+          completedAt: new Date().toISOString(),
+          data: {
+            emotion: emotionResponse || null,
+            quickRating: null,
+            survey: {}
+          },
+          mode: 'public',
+          metadata: {
+            userAgent: navigator.userAgent,
+            platform: navigator.platform,
+            timestamp: Date.now()
+          }
+        };
+  
+        const responseRef = collection(doc(db, "projects", projectData.id), "responses");
+        await addDoc(responseRef, finalResponse);
+        
+        // Skip to thank you step
+        setTimeout(() => {
+          nextStep();
+          nextStep(); // Skip quick rating
+          nextStep(); // Skip survey
+        }, 500);
+        
+        return;
+      } catch (err) {
+        console.error("Error submitting response:", err);
+        // Continue to next step even if submission fails
+      }
+    }
+  
+    // Otherwise proceed normally
+    if (projectData.quickRating?.enabled) {
+      setTimeout(nextStep, 500);
+    } else {
+      setTimeout(() => {
         nextStep();
         nextStep(); // Skip quick-rating step
-      }
-    }, 500);
-  }, [projectData.id, projectData.quickRating.enabled, nextStep, updateResponses]);
+      }, 500);
+    }
+  };
 
   // Initialize
   useEffect(() => {

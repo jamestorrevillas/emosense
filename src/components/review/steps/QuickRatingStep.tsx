@@ -1,5 +1,5 @@
 //src/components/review/steps/QuickRatingStep.tsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useReview } from "@/contexts/ReviewContext";
 import { QuickRating } from "@/components/projects/QuickRating";
@@ -32,8 +32,15 @@ export function QuickRatingStep() {
     }
   };
 
-  if (!projectData.quickRating.enabled) {
-    nextStep(); // Skip if quick rating is disabled
+  // Use useEffect instead of direct render check
+  useEffect(() => {
+    if (!projectData.quickRating?.enabled) {
+      nextStep();
+    }
+  }, [projectData.quickRating?.enabled, nextStep]);
+
+  // Return null instead of progressing if quick rating is not enabled
+  if (!projectData.quickRating?.enabled) {
     return null;
   }
 
