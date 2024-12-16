@@ -56,6 +56,26 @@ export const ConsentStep = () => {
     nextStep();
   };
 
+  // Dynamically generate data collection points
+  const dataCollectionPoints = [
+    {
+      icon: Camera,
+      text: "Face detection data for attention tracking (no video is stored)"
+    },
+    {
+      icon: VideoIcon,
+      text: "Video viewing information (completion, attention points)"
+    },
+    ...(projectData.quickRating?.enabled ? [{
+      icon: Star,
+      text: "Your rating and immediate feedback"
+    }] : []),
+    ...(projectData.survey?.questions?.length ? [{
+      icon: ClipboardList,
+      text: "Your responses to the survey questions"
+    }] : [])
+  ];
+
   return (
     <Card className="max-w-2xl mx-auto">
       <CardHeader>
@@ -76,32 +96,14 @@ export const ConsentStep = () => {
               What we collect
             </h3>
             <div className="grid gap-3 pl-7">
-              <div className="flex items-start gap-2">
-                <Camera className="h-4 w-4 mt-1 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">
-                  Face detection data for attention tracking (no video is stored)
-                </p>
-              </div>
-              <div className="flex items-start gap-2">
-                <VideoIcon className="h-4 w-4 mt-1 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">
-                  Video viewing information (completion, attention points)
-                </p>
-              </div>
-              {projectData.quickRating?.enabled && (
-                <div className="flex items-start gap-2">
-                  <Star className="h-4 w-4 mt-1 text-muted-foreground" />
+              {dataCollectionPoints.map((point, index) => (
+                <div key={index} className="flex items-start gap-2">
+                  <point.icon className="h-4 w-4 mt-1 text-muted-foreground" />
                   <p className="text-sm text-muted-foreground">
-                    Your rating and immediate feedback
+                    {point.text}
                   </p>
                 </div>
-              )}
-              <div className="flex items-start gap-2">
-                <ClipboardList className="h-4 w-4 mt-1 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">
-                  Your responses to the survey questions
-                </p>
-              </div>
+              ))}
             </div>
           </div>
 

@@ -7,7 +7,7 @@ import { Clock, Video, Star, ClipboardList } from "lucide-react";
 export const IntroStep = () => {
   const { nextStep, projectData } = useReview();
 
-  // Calculate estimated time (video duration + rating + survey questions)
+  // Calculate estimated time dynamically
   const getEstimatedTime = () => {
     const videoDuration = 5; // Default 5 minutes
     const ratingTime = projectData.quickRating?.enabled ? 1 : 0;
@@ -16,6 +16,28 @@ export const IntroStep = () => {
     const totalMinutes = Math.ceil(videoDuration + ratingTime + surveyTime);
     return `${totalMinutes} minutes`;
   };
+
+  // Dynamic process steps
+  const processSteps = [
+    {
+      key: 'video',
+      icon: Video,
+      title: 'Watch Video',
+      description: 'Watch the complete video content'
+    },
+    ...(projectData.quickRating?.enabled ? [{
+      key: 'rating',
+      icon: Star,
+      title: 'Quick Rating',
+      description: projectData.quickRating.title || 'Provide your immediate feedback'
+    }] : []),
+    ...(projectData.survey?.questions?.length ? [{
+      key: 'survey',
+      icon: ClipboardList,
+      title: 'Short Survey',
+      description: `Answer ${projectData.survey.questions.length} brief questions`
+    }] : [])
+  ];
 
   return (
     <Card className="max-w-2xl mx-auto">
@@ -34,39 +56,30 @@ export const IntroStep = () => {
         )}
 
         {/* Process Overview */}
-        <div className="grid gap-4 md:grid-cols-3">
-          <div className="flex flex-col items-center gap-2 p-4 rounded-lg bg-accent/50">
-            <Video className="h-6 w-6 text-primary" />
-            <h3 className="font-medium">Watch Video</h3>
-            <p className="text-sm text-center text-muted-foreground">
-              Watch the complete video content
-            </p>
+        {processSteps.length > 0 && (
+          <div className={`grid gap-4 ${processSteps.length === 3 ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
+            {processSteps.map((step) => (
+              <div 
+                key={step.key} 
+                className="flex flex-col items-center gap-2 p-4 rounded-lg bg-accent/50"
+              >
+                <step.icon className="h-6 w-6 text-primary" />
+                <h3 className="font-medium">{step.title}</h3>
+                <p className="text-sm text-center text-muted-foreground">
+                  {step.description}
+                </p>
+              </div>
+            ))}
           </div>
-
-          {projectData.quickRating?.enabled && (
-            <div className="flex flex-col items-center gap-2 p-4 rounded-lg bg-accent/50">
-              <Star className="h-6 w-6 text-primary" />
-              <h3 className="font-medium">Quick Rating</h3>
-              <p className="text-sm text-center text-muted-foreground">
-                Provide your immediate feedback
-              </p>
-            </div>
-          )}
-
-          <div className="flex flex-col items-center gap-2 p-4 rounded-lg bg-accent/50">
-            <ClipboardList className="h-6 w-6 text-primary" />
-            <h3 className="font-medium">Short Survey</h3>
-            <p className="text-sm text-center text-muted-foreground">
-              Answer {projectData.survey?.questions.length} brief questions
-            </p>
-          </div>
-        </div>
+        )}
 
         {/* Time Estimate */}
-        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-          <Clock className="h-4 w-4" />
-          <span>Estimated time: {getEstimatedTime()}</span>
-        </div>
+        {processSteps.length > 0 && (
+          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+            <Clock className="h-4 w-4" />
+            <span>Estimated time: {getEstimatedTime()}</span>
+          </div>
+        )}
 
         {/* Start Button */}
         <div className="flex justify-center pt-4">
