@@ -1,22 +1,47 @@
 // src/components/review/steps/IntroStep.tsx
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useReview } from "@/contexts/ReviewContext";
-import { Clock, Video, Star, ClipboardList } from "lucide-react";
+import { Clock, Video, Star, ClipboardList, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { Question } from "@/types/project";
+
+// Get video duration
+const getVideoLength = async (videoUrl: string): Promise<number> => {
+  return new Promise((resolve) => {
+    const video = document.createElement('video');
+    video.src = videoUrl;
+    video.onloadedmetadata = () => {
+      resolve(video.duration);
+    };
+    // Fallback if metadata loading fails
+    video.onerror = () => resolve(300); // Default to 5 minutes
+  });
+};
+
+// Estimate time per question type
+const estimateQuestionTime = (question: Question): number => {
+  switch (question.type) {
+    case 'text':
+      return question.maxLength && question.maxLength > 100 ? 60 : 45; // Longer for large text fields
+    case 'multiple_choice':
+      return question.options.length > 5 ? 25 : 15; // More time for more options
+    case 'rating_scale':
+      return 20;
+    case 'checkbox':
+      return question.options.length > 5 ? 40 : 30; // More time for more options
+    case 'yes_no':
+      return 10;
+    default:
+      return 20;
+  }
+};
 
 export const IntroStep = () => {
-  const { nextStep, projectData } = useReview();
-
-  // Calculate estimated time dynamically
-  const getEstimatedTime = () => {
-    const videoDuration = 5; // Default 5 minutes
-    const ratingTime = projectData.quickRating?.enabled ? 1 : 0;
-    const surveyTime = (projectData.survey?.questions?.length || 0) * 0.5; // 30 seconds per question
-    
-    const totalMinutes = Math.ceil(videoDuration + ratingTime + surveyTime);
-    return `${totalMinutes} minutes`;
-  };
+  const { nextStep, projectData, mode } = useReview();
+  const [estimatedTime, setEstimatedTime] = useState<string>('calculating...');
+  const [isCalculating, setIsCalculating] = useState(true);
 
   // Dynamic process steps
   const processSteps = [
@@ -36,9 +61,60 @@ export const IntroStep = () => {
       key: 'survey',
       icon: ClipboardList,
       title: 'Short Survey',
-      description: `Answer ${projectData.survey.questions.length} brief questions`
+      description: `Answer ${projectData.survey.questions.length} brief question${projectData.survey.questions.length === 1 ? '' : 's'}`
     }] : [])
   ];
+
+  useEffect(() => {
+    const calculateEstimatedTime = async () => {
+      try {
+        setIsCalculating(true);
+        
+        // Initial setup time (camera, consent)
+        const setupTime = 60; // 60 seconds for setup
+        
+        // Get video duration
+        const videoDuration = await getVideoLength(projectData.videoUrl);
+        
+        // Quick rating time if enabled
+        const ratingTime = projectData.quickRating?.enabled ? 20 : 0;
+        
+        // Calculate survey time based on question types and complexity
+        const surveyTime = projectData.survey?.questions?.reduce((total, question) => {
+          // Add question reading time (based on text length)
+          const readingTime = Math.ceil(question.text.length / 20) * 2; // ~2 seconds per 20 characters
+          // Add response time based on question type
+          const responseTime = estimateQuestionTime(question);
+          return total + readingTime + responseTime;
+        }, 0) || 0;
+
+        // Calculate total time in seconds
+        const totalSeconds = Math.ceil(videoDuration + setupTime + ratingTime + surveyTime);
+
+        // Add 10% buffer time
+        const totalWithBuffer = Math.ceil(totalSeconds * 1.1);
+        
+        // Format time string
+        if (totalWithBuffer < 60) {
+          setEstimatedTime(`${totalWithBuffer} seconds`);
+        } else if (totalWithBuffer < 3600) {
+          const minutes = Math.ceil(totalWithBuffer / 60);
+          setEstimatedTime(`${minutes} minute${minutes !== 1 ? 's' : ''}`);
+        } else {
+          const hours = Math.floor(totalWithBuffer / 3600);
+          const minutes = Math.ceil((totalWithBuffer % 3600) / 60);
+          setEstimatedTime(`${hours} hour${hours !== 1 ? 's' : ''} ${minutes > 0 ? `and ${minutes} minute${minutes !== 1 ? 's' : ''}` : ''}`);
+        }
+      } catch (error) {
+        console.error('Error calculating time:', error);
+        setEstimatedTime('5-10 minutes'); // Fallback estimate
+      } finally {
+        setIsCalculating(false);
+      }
+    };
+
+    calculateEstimatedTime();
+  }, [projectData]);
 
   // Determine grid columns based on number of steps
   const getGridClass = (stepCount: number) => {
@@ -59,7 +135,10 @@ export const IntroStep = () => {
       <CardHeader className="text-center">
         <CardTitle className="text-2xl">{projectData.title}</CardTitle>
         <CardDescription className="text-base">
-          Thank you for participating in this review
+          {mode === 'preview' 
+            ? 'Preview mode - responses will not be saved'
+            : 'Thank you for participating in this review'
+          }
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -99,8 +178,17 @@ export const IntroStep = () => {
         {/* Time Estimate */}
         {processSteps.length > 0 && (
           <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-            <Clock className="h-4 w-4" />
-            <span>Estimated time: {getEstimatedTime()}</span>
+            {isCalculating ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Calculating estimated time...</span>
+              </>
+            ) : (
+              <>
+                <Clock className="h-4 w-4" />
+                <span>Estimated time: {estimatedTime}</span>
+              </>
+            )}
           </div>
         )}
 
@@ -111,7 +199,7 @@ export const IntroStep = () => {
             onClick={nextStep}
             className="bg-[#011BA1] hover:bg-[#00008B]"
           >
-            Start Review
+            {mode === 'preview' ? 'Start Preview' : 'Start Review'}
           </Button>
         </div>
 
@@ -122,4 +210,4 @@ export const IntroStep = () => {
       </CardContent>
     </Card>
   );
-};
+}
