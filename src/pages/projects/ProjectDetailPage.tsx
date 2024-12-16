@@ -204,7 +204,7 @@ export const ProjectDetailPage = () => {
             </CardContent>
           </Card>
 
-          {project.quickRating.enabled && (
+          {project.quickRating?.enabled && (
             <Card>
               <CardHeader>
                 <CardTitle>Quick Rating</CardTitle>
@@ -214,13 +214,15 @@ export const ProjectDetailPage = () => {
               </CardHeader>
               <CardContent>
                 <div className="max-w-xl mx-auto">
-                  <QuickRating settings={project.quickRating} />
+                  {project.quickRating && (
+                    <QuickRating settings={project.quickRating} />
+                  )}
                 </div>
               </CardContent>
             </Card>
           )}
 
-<Card>
+          <Card>
             <CardHeader>
               <CardTitle>Survey Questions</CardTitle>
               <CardDescription>
@@ -228,7 +230,7 @@ export const ProjectDetailPage = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {project.survey.questions.length === 0 ? (
+              {!project.survey?.questions || project.survey.questions.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   No survey questions added yet
                 </div>
