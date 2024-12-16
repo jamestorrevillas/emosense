@@ -12,8 +12,17 @@ export interface Project {
   createdAt: string;
   updatedAt: string;
   settings: ProjectSettings;
-  quickRating: QuickRatingSettings;
-  survey: Survey;
+  quickRating?: QuickRatingSettings;
+  survey?: {
+    id: string;
+    projectId: string;  
+    questions: Question[];
+    settings: {
+      showQuestionsAtEnd: boolean;
+      allowSkip: boolean;
+      showProgressBar: boolean;
+    };
+  };
 }
 
 export type ProjectStatus = 'draft' | 'active' | 'completed' | 'archived';

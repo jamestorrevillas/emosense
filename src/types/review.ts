@@ -28,8 +28,8 @@ export interface ReviewProjectData {
   description: string;
   videoUrl: string;
   thumbnailUrl: string | null;
-  quickRating: QuickRatingSettings;
-  survey: {
+  quickRating?: QuickRatingSettings;
+  survey?: {
     questions: Question[];
     settings: {
       showQuestionsAtEnd: boolean;
