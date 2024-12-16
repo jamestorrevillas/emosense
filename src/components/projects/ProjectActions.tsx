@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { doc, deleteDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
+import { useNavigate } from "react-router-dom";
 import { deleteAsset } from "@/lib/cloudinary/upload";
 import { Project } from "@/types/project";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,7 @@ interface ProjectActionsProps {
 }
 
 export function ProjectActions({ project, onStatusChange, onDeleted }: ProjectActionsProps) {
+  const navigate = useNavigate();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -59,9 +61,11 @@ export function ProjectActions({ project, onStatusChange, onDeleted }: ProjectAc
       // Delete from Firestore
       await deleteDoc(doc(db, "projects", project.id));
       
-      // Call onDeleted callback
+      // Call onDeleted callback if provided
       onDeleted?.();
-      setShowDeleteDialog(false);
+      
+      // Navigate to projects list
+      navigate('/app/projects');
     } catch (err) {
       console.error("Error deleting project:", err);
       setError("Failed to delete project");
