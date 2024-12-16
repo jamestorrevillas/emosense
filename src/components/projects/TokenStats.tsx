@@ -36,7 +36,7 @@ export function TokenStats({ token }: TokenStatsProps) {
       
       if (projectSnap.exists()) {
         const projectData = projectSnap.data() as Project;
-        setRatingType(projectData.quickRating.type);
+        setRatingType(projectData.quickRating?.type || 'stars');
       }
     } catch (err) {
       console.error("Error fetching project details:", err);

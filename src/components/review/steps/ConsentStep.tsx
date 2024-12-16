@@ -88,7 +88,7 @@ export const ConsentStep = () => {
                   Video viewing information (completion, attention points)
                 </p>
               </div>
-              {projectData.quickRating.enabled && (
+              {projectData.quickRating?.enabled && (
                 <div className="flex items-start gap-2">
                   <Star className="h-4 w-4 mt-1 text-muted-foreground" />
                   <p className="text-sm text-muted-foreground">

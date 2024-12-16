@@ -136,11 +136,11 @@ export const EditProjectPage = () => {
         // Set form values
         setTitle(projectData.title);
         setDescription(projectData.description);
-        setQuestions(projectData.survey.questions);
-        setEnableQuickRating(projectData.quickRating.enabled);
-        setRatingType(projectData.quickRating.type);
-        setRatingTitle(projectData.quickRating.title);
-        setRatingDescription(projectData.quickRating.description || "");
+        setQuestions(projectData.survey?.questions || []);
+        setEnableQuickRating(projectData.quickRating?.enabled || false);
+        setRatingType(projectData.quickRating?.type || 'stars');
+        setRatingTitle(projectData.quickRating?.title || '');
+        setRatingDescription(projectData.quickRating?.description || "");
 
       } catch (err) {
         console.error("Error fetching project:", err);

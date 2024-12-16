@@ -10,8 +10,8 @@ export const IntroStep = () => {
   // Calculate estimated time (video duration + rating + survey questions)
   const getEstimatedTime = () => {
     const videoDuration = 5; // Default 5 minutes
-    const ratingTime = projectData.quickRating.enabled ? 1 : 0;
-    const surveyTime = projectData.survey.questions.length * 0.5; // 30 seconds per question
+    const ratingTime = projectData.quickRating?.enabled ? 1 : 0;
+    const surveyTime = (projectData.survey?.questions?.length || 0) * 0.5; // 30 seconds per question
     
     const totalMinutes = Math.ceil(videoDuration + ratingTime + surveyTime);
     return `${totalMinutes} minutes`;
@@ -43,7 +43,7 @@ export const IntroStep = () => {
             </p>
           </div>
 
-          {projectData.quickRating.enabled && (
+          {projectData.quickRating?.enabled && (
             <div className="flex flex-col items-center gap-2 p-4 rounded-lg bg-accent/50">
               <Star className="h-6 w-6 text-primary" />
               <h3 className="font-medium">Quick Rating</h3>
@@ -57,7 +57,7 @@ export const IntroStep = () => {
             <ClipboardList className="h-6 w-6 text-primary" />
             <h3 className="font-medium">Short Survey</h3>
             <p className="text-sm text-center text-muted-foreground">
-              Answer {projectData.survey.questions.length} brief questions
+              Answer {projectData.survey?.questions.length} brief questions
             </p>
           </div>
         </div>
