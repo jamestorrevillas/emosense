@@ -193,14 +193,54 @@ export function EmotionAnalytics({ projectId }: EmotionAnalyticsProps) {
       </Card>
 
       {/* Overall Analysis */}
-      {analysis.overall && (
-        <OverallAnalysisView analysis={analysis.overall} />
-      )}
+      <Card>
+            <CardHeader>
+              <CardTitle>Overall Analysis</CardTitle>
+              <CardDescription>
+                Comprehensive analysis of emotional patterns and responses
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {analysis.overall ? (
+                <OverallAnalysisView analysis={analysis.overall} />
+              ) : (
+                <div className="p-8 flex items-center justify-center border-2 border-dashed rounded-lg bg-muted/50">
+                  <p className="text-muted-foreground text-center">
+                    Track your emotions to see an overall analysis of your emotional responses.
+                    <br />
+                    <span className="text-sm">
+                      You'll see dominant emotions, patterns, and key observations.
+                    </span>
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
       {/* Timeline Analysis */}
-      {analysis.timeline.length > 0 && (
-        <EmotionalTimelineView timeline={analysis.timeline} />
-      )}
+      <Card>
+        <CardHeader>
+          <CardTitle>Emotional Timeline</CardTitle>
+          <CardDescription>
+            Moment-by-moment breakdown of emotional states
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {analysis.timeline.length > 0 ? (
+            <EmotionalTimelineView timeline={analysis.timeline} />
+          ) : (
+            <div className="p-8 flex items-center justify-center border-2 border-dashed rounded-lg bg-muted/50">
+              <p className="text-muted-foreground text-center">
+                Start tracking to see a detailed timeline of your emotional states.
+                <br />
+                <span className="text-sm">
+                  The timeline will show key emotional moments and transitions.
+                </span>
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
