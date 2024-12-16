@@ -49,29 +49,35 @@ export function ProjectAnalytics({ project }: ProjectAnalyticsProps) {
           setLoading(false);
           return;
         }
-
+  
         // Calculate total responses
         const totalResponses = responses.length;
-
+  
         // Calculate average rating if applicable
         let avgRating = null;
         if (project.quickRating?.enabled) {
+          // Only include responses that have valid quick ratings (not null, undefined, or 0)
           const ratings = responses
-            .filter(doc => doc.data().data?.quickRating !== undefined)
+            .filter(doc => {
+              const quickRating = doc.data().data?.quickRating;
+              return quickRating !== undefined && 
+                     quickRating !== null && 
+                     quickRating !== 0;
+            })
             .map(doc => doc.data().data.quickRating as number);
           
           if (ratings.length > 0) {
             avgRating = ratings.reduce((a, b) => a + b, 0) / ratings.length;
           }
         }
-
+  
         // Get last response timestamp
         const lastResponse = responses
           .map(doc => new Date(doc.data().completedAt || doc.data().startedAt))
           .sort((a, b) => b.getTime() - a.getTime())[0];
         
         const lastResponseAt = lastResponse ? lastResponse.toISOString() : null;
-
+  
         setMetrics({
           totalResponses,
           avgRating,
@@ -84,7 +90,7 @@ export function ProjectAnalytics({ project }: ProjectAnalyticsProps) {
         setLoading(false);
       }
     });
-
+  
     return () => unsubscribe();
   }, [project.id, project.quickRating?.enabled]);
 
