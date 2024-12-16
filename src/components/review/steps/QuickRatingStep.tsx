@@ -6,6 +6,7 @@ import { QuickRating } from "@/components/projects/QuickRating";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { collection, doc, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
+import { Loader2 } from "lucide-react";
 
 export function QuickRatingStep() {
   const { nextStep, projectData, updateResponses, mode, responses } = useReview();
@@ -80,11 +81,15 @@ export function QuickRatingStep() {
   return (
     <Card className="max-w-2xl mx-auto">
       <CardHeader className="text-center">
-        <CardTitle>Quick Rating</CardTitle>
+        <CardTitle>
+          {isSubmitting ? 'Submitting Response...' : 'Quick Rating'}
+        </CardTitle>
         <CardDescription>
-          {mode === 'preview' 
-            ? 'Preview the rating component (responses will not be saved)'
-            : 'Share your immediate feedback about the video'
+          {isSubmitting 
+            ? 'Please wait while we process your feedback'
+            : mode === 'preview'
+              ? 'Preview the rating component (responses will not be saved)'
+              : 'Share your immediate feedback about the video'
           }
         </CardDescription>
       </CardHeader>
@@ -93,6 +98,12 @@ export function QuickRatingStep() {
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
           </Alert>
+        )}
+
+        {isSubmitting && (
+          <div className="flex justify-center">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          </div>
         )}
 
         <div className={isSubmitting ? 'opacity-50 pointer-events-none' : ''}>

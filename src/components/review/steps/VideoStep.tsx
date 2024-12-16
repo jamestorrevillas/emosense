@@ -15,7 +15,7 @@ import type { EmotionData } from '@/components/emotion/types/emotion';
 import type { EmotionDataPoint, EmotionResponse } from '@/types/response';
 
 export function VideoStep() {
-  const { nextStep, projectData, responses, updateResponses, mode } = useReview();
+  const { nextStep, projectData, responses, updateResponses } = useReview();
   const [detectedFace, setDetectedFace] = useState<HTMLCanvasElement | null>(null);
   const [faceBox, setFaceBox] = useState<Box | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -29,6 +29,7 @@ export function VideoStep() {
   const totalPlayTimeRef = useRef<number>(0);
   const videoStartRef = useRef<number>(0);
   const lastPlayPositionRef = useRef<number>(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Handle emotion tracking state
   useEffect(() => {
@@ -137,7 +138,7 @@ export function VideoStep() {
   const handleVideoComplete = async () => {
     const finalPlayDuration = totalPlayTimeRef.current + 
       (activePlayStartRef.current > 0 ? Date.now() - activePlayStartRef.current : 0);
-  
+
     const emotionResponse: EmotionResponse = {
       videoId: projectData.id,
       duration: finalPlayDuration,
@@ -145,12 +146,14 @@ export function VideoStep() {
       endTime: new Date().toISOString(),
       data: emotionDataRef.current
     };
-  
+
     updateResponses({ emotionResponse });
-  
+
     // Submit response directly if no quick rating or survey questions
     if (!projectData.quickRating?.enabled && (!projectData.survey?.questions?.length)) {
       try {
+        setIsSubmitting(true); // Add loading state
+
         const finalResponse = {
           projectId: projectData.id,
           status: 'completed',
@@ -161,14 +164,14 @@ export function VideoStep() {
             quickRating: null,
             survey: {}
           },
-          mode: mode,
+          mode: 'public',
           metadata: {
             userAgent: navigator.userAgent,
             platform: navigator.platform,
             timestamp: Date.now()
           }
         };
-  
+
         const responseRef = collection(doc(db, "projects", projectData.id), "responses");
         await addDoc(responseRef, finalResponse);
         
@@ -182,7 +185,8 @@ export function VideoStep() {
         return;
       } catch (err) {
         console.error("Error submitting response:", err);
-        // Continue to next step even if submission fails
+      } finally {
+        setIsSubmitting(false);
       }
     }
   
@@ -237,7 +241,7 @@ export function VideoStep() {
             
             {/* Face Detection Overlay */}
             {responses.cameraStream && (
-              (isInitializing || !responses.isFaceDetected) && (
+              (isInitializing || !responses.isFaceDetected || isSubmitting) && (
                 <div className="absolute inset-0 flex items-center justify-center transition-all duration-300 z-[60]">
                   <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
                   {isInitializing ? (
@@ -247,6 +251,16 @@ export function VideoStep() {
                         <AlertDescription className="text-blue-800">
                           <p>Initializing emotion detection models...</p>
                           <p className="text-sm mt-1">This may take a few moments.</p>
+                        </AlertDescription>
+                      </div>
+                    </Alert>
+                  ) : isSubmitting ? (
+                    <Alert className="w-[90%] max-w-md border-blue-500 bg-blue-50/95 shadow-lg">
+                      <div className="flex gap-3">
+                        <Loader2 className="h-5 w-5 flex-shrink-0 text-blue-500 animate-spin" />
+                        <AlertDescription className="text-blue-800">
+                          <p>Submitting your response...</p>
+                          <p className="text-sm mt-1">Please wait while we process your feedback.</p>
                         </AlertDescription>
                       </div>
                     </Alert>
