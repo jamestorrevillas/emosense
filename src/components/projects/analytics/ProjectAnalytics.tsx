@@ -1,11 +1,11 @@
 // src/components/projects/analytics/ProjectAnalytics.tsx
 import { useState, useEffect } from "react";
-import { collection, doc, onSnapshot, query } from "firebase/firestore";
+import { collection, doc, query, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { Project } from "@/types/project";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Star, ThumbsUp } from "lucide-react";
+import { Loader2, Star, ThumbsUp, Info } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { EmotionAnalytics } from "./EmotionAnalytics";
 import { SurveyAnalytics } from "./SurveyAnalytics";
@@ -16,7 +16,7 @@ interface ProjectAnalyticsProps {
 
 interface AnalyticsMetrics {
   totalResponses: number;
-  avgRating: number;
+  avgRating: number | null;
   lastResponseAt: string | null;
 }
 
@@ -25,7 +25,7 @@ export function ProjectAnalytics({ project }: ProjectAnalyticsProps) {
   const [error, setError] = useState<string | null>(null);
   const [metrics, setMetrics] = useState<AnalyticsMetrics>({
     totalResponses: 0,
-    avgRating: 0,
+    avgRating: null,
     lastResponseAt: null,
   });
 
@@ -43,7 +43,7 @@ export function ProjectAnalytics({ project }: ProjectAnalyticsProps) {
         if (responses.length === 0) {
           setMetrics({
             totalResponses: 0,
-            avgRating: 0,
+            avgRating: null,
             lastResponseAt: null
           });
           setLoading(false);
@@ -53,24 +53,30 @@ export function ProjectAnalytics({ project }: ProjectAnalyticsProps) {
         // Calculate total responses
         const totalResponses = responses.length;
 
-        // Calculate average rating
-        const ratingsSum = responses.reduce((sum, doc) => {
-          const rating = doc.data().data?.quickRating;
-          return rating ? sum + rating : sum;
-        }, 0);
-        const avgRating = ratingsSum / totalResponses;
+        // Calculate average rating if applicable
+        let avgRating = null;
+        if (project.quickRating?.enabled) {
+          const ratings = responses
+            .filter(doc => doc.data().data?.quickRating !== undefined)
+            .map(doc => doc.data().data.quickRating as number);
+          
+          if (ratings.length > 0) {
+            avgRating = ratings.reduce((a, b) => a + b, 0) / ratings.length;
+          }
+        }
 
         // Get last response timestamp
-        const timestamps = responses
-          .map(doc => new Date(doc.data().completedAt).getTime());
-        const lastResponseAt = new Date(Math.max(...timestamps)).toISOString();
+        const lastResponse = responses
+          .map(doc => new Date(doc.data().completedAt || doc.data().startedAt))
+          .sort((a, b) => b.getTime() - a.getTime())[0];
+        
+        const lastResponseAt = lastResponse ? lastResponse.toISOString() : null;
 
         setMetrics({
           totalResponses,
           avgRating,
           lastResponseAt
         });
-
         setLoading(false);
       } catch (err) {
         console.error("Error processing responses:", err);
@@ -80,17 +86,50 @@ export function ProjectAnalytics({ project }: ProjectAnalyticsProps) {
     });
 
     return () => unsubscribe();
-  }, [project.id]);
+  }, [project.id, project.quickRating?.enabled]);
 
   const getThumbsPercentage = (rating: number) => Math.round(rating * 100);
 
-  const renderRating = (avgRating: number) => {
+  const renderRating = () => {
+    if (!project.quickRating?.enabled) {
+      return (
+        <div className="text-center space-y-2">
+          <div className="flex items-center justify-center gap-2">
+            <Info className="h-4 w-4 text-muted-foreground" />
+            <div className="text-sm text-muted-foreground">
+              Quick rating not configured
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Configure quick rating in project settings to collect ratings
+          </p>
+        </div>
+      );
+    }
+
+    if (metrics.avgRating === null) {
+      return (
+        <div className="text-center space-y-2">
+          <div className="text-sm text-muted-foreground">
+            No ratings collected yet
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Waiting for viewer responses
+          </p>
+        </div>
+      );
+    }
+
     switch (project.quickRating.type) {
       case 'stars':
         return (
           <div className="text-center space-y-2">
-            <Star className="h-6 w-6 mx-auto text-yellow-500 fill-yellow-500" />
-            <div className="text-2xl font-bold">{avgRating.toFixed(1)}</div>
+            <div className="flex items-center justify-center gap-2">
+              <div className="text-2xl font-bold">
+                {metrics.avgRating.toFixed(1)}
+              </div>
+              <Star className="h-6 w-6 text-yellow-500 fill-yellow-500" />
+            </div>
             <p className="text-sm text-muted-foreground">Average Stars</p>
           </div>
         );
@@ -98,7 +137,7 @@ export function ProjectAnalytics({ project }: ProjectAnalyticsProps) {
       case 'numeric':
         return (
           <div className="text-center space-y-2">
-            <div className="text-2xl font-bold">{avgRating.toFixed(1)}/10</div>
+            <div className="text-2xl font-bold">{metrics.avgRating.toFixed(1)}/10</div>
             <p className="text-sm text-muted-foreground">Average Rating</p>
           </div>
         );
@@ -106,8 +145,12 @@ export function ProjectAnalytics({ project }: ProjectAnalyticsProps) {
       case 'thumbs':
         return (
           <div className="text-center space-y-2">
-            <ThumbsUp className="h-6 w-6 mx-auto text-primary fill-primary" />
-            <div className="text-2xl font-bold">{getThumbsPercentage(avgRating)}%</div>
+            <div className="flex items-center justify-center gap-2">
+              <div className="text-2xl font-bold">
+                {getThumbsPercentage(metrics.avgRating)}%
+              </div>
+              <ThumbsUp className="h-6 w-6 text-primary fill-primary" />
+            </div>
             <p className="text-sm text-muted-foreground">Thumbs Up</p>
           </div>
         );
@@ -115,7 +158,7 @@ export function ProjectAnalytics({ project }: ProjectAnalyticsProps) {
       default:
         return (
           <div className="text-center space-y-2">
-            <div className="text-2xl font-bold">{avgRating.toFixed(1)}</div>
+            <div className="text-2xl font-bold">{metrics.avgRating.toFixed(1)}</div>
             <p className="text-sm text-muted-foreground">Average Rating</p>
           </div>
         );
@@ -125,7 +168,7 @@ export function ProjectAnalytics({ project }: ProjectAnalyticsProps) {
   if (loading) {
     return (
       <div className="flex justify-center py-8">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -142,6 +185,7 @@ export function ProjectAnalytics({ project }: ProjectAnalyticsProps) {
     <div className="space-y-8">
       {/* Overview Cards */}
       <div className="grid gap-4 md:grid-cols-3">
+        {/* Total Responses */}
         <Card>
           <CardContent className="pt-6">
             <div className="text-center space-y-2">
@@ -151,31 +195,65 @@ export function ProjectAnalytics({ project }: ProjectAnalyticsProps) {
           </CardContent>
         </Card>
 
+        {/* Quick Rating */}
         <Card>
           <CardContent className="pt-6">
-            {renderRating(metrics.avgRating)}
+            {renderRating()}
           </CardContent>
         </Card>
 
-        {metrics.lastResponseAt && (
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center space-y-2">
-                <div className="text-2xl font-bold">
-                  {formatDistanceToNow(new Date(metrics.lastResponseAt), { addSuffix: true })}
-                </div>
-                <p className="text-sm text-muted-foreground">Last Response</p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {/* Last Response */}
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center space-y-2">
+              {metrics.lastResponseAt ? (
+                <>
+                  <div className="text-2xl font-bold">
+                    {formatDistanceToNow(new Date(metrics.lastResponseAt), { addSuffix: true })}
+                  </div>
+                  <p className="text-sm text-muted-foreground">Last Response</p>
+                </>
+              ) : (
+                <>
+                  <div className="text-sm text-muted-foreground">
+                    No responses yet
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Share your project to start collecting responses
+                  </p>
+                </>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <EmotionAnalytics projectId={project.id} />
 
       <Separator />
 
-      <SurveyAnalytics projectId={project.id} survey={project.survey} />
+      {/* Survey Results */}
+      {project.survey?.questions?.length ? (
+        <SurveyAnalytics projectId={project.id} survey={project.survey} />
+      ) : (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <CardTitle>Survey Results</CardTitle>
+              <Info className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <CardDescription>Analysis of survey responses</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-6 text-muted-foreground space-y-2">
+              <p>No survey questions configured</p>
+              <p className="text-sm">
+                Add survey questions in project settings to collect detailed feedback
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
