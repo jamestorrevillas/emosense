@@ -17,6 +17,7 @@ import { SettingsPage } from '@/pages/settings/SettingsPage';
 import { PlaygroundPage } from '@/pages/playground/PlaygroundPage';
 import LandingPage from '@/pages/landing/LandingPage';
 import { PublicPlaygroundPage } from '@/pages/landing/playground/PublicPlaygroundPage';
+import { AudienceEmotionDetectionPage } from '@pages/audience emotion detection/AudienceEmotionDetectionPage';
 
 // Project routes with standard layout
 const protectedRoutes: RouteObject[] = [
@@ -62,6 +63,10 @@ const protectedRoutes: RouteObject[] = [
           {
             path: 'settings',
             element: <SettingsPage />
+          },
+          {
+            path: 'audience-emotion-detection',
+            element: <AudienceEmotionDetectionPage />
           }
         ]
       }
