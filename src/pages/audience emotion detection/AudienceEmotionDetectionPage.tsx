@@ -4,7 +4,6 @@ import { WebcamFeed } from '@/components/emotion/tracker/WebcamFeed';
 import { EmotionTracker } from '@/components/emotion/tracker/EmotionTracker';
 import { FaceTracker } from '@/components/emotion/tracker/FaceTracker';
 import { EmotionAnalyzer } from '@/components/emotion/analysis/EmotionAnalyzer';
-import { EmotionalResponseTrend } from '@/components/emotion/visualization/EmotionalResponseTrend';
 import { OverallAnalysisView } from '@/components/emotion/visualization/OverallAnalysisView';
 import { EmotionalTimelineView } from '@/components/emotion/visualization/EmotionalTimelineView';
 import { Button } from '@/components/ui/button';
