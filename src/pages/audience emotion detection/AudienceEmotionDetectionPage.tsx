@@ -6,12 +6,13 @@ import { FaceTracker } from '@/components/emotion/tracker/FaceTracker';
 import { EmotionAnalyzer } from '@/components/emotion/analysis/EmotionAnalyzer';
 import { OverallAnalysisView } from '@/components/emotion/visualization/OverallAnalysisView';
 import { EmotionalTimelineView } from '@/components/emotion/visualization/EmotionalTimelineView';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Play, Square, AlertCircle, Info, Webcam, Camera, Loader2 } from 'lucide-react';
+import { Play, Square, AlertCircle, Info, Webcam, Camera, Loader2, Shield } from 'lucide-react';
 import type { EmotionData, ProcessingStatus, EmotionLabel } from '@/components/emotion/types/emotion';
 import type { EmotionalMoment, EmotionTimelineEntry, OverallAnalysis } from '@/components/emotion/types/analysis';
 import type { Box } from '@vladmandic/face-api';
@@ -225,8 +226,15 @@ export function AudienceEmotionDetectionPage() {
                 Experience real-time audience emotion detection and analysis
                 </p>
             </div>
+
+            <Tabs defaultValue="audienceAI" className="space-y-6">
+                <TabsList className="w-full justify-start bg-muted/50 p-1">
+                    <TabsTrigger value="audienceAI">AudienceAI</TabsTrigger>
+                    <TabsTrigger value="sessions">History</TabsTrigger>
+                </TabsList>
     
             {/* Info Alert */}
+            <TabsContent value="audienceAI" className="space-y-6">
             <Alert>
                 <Info className="h-4 w-4" />
                 <AlertDescription>
@@ -461,6 +469,28 @@ export function AudienceEmotionDetectionPage() {
                     />
                 </>
             )}
+
+           </ TabsContent>
+
+           <TabsContent value="sessions" className="space-y-6">
+                     <Card>
+                       <CardHeader>
+                         <div className="flex items-center gap-2">
+                          <Shield className="h-5 w-5 text-primary" />   
+                           <div>
+                             <CardTitle>AudienceAI History</CardTitle>
+                             <CardDescription>
+                               Review your sessions.
+                             </CardDescription>
+                           </div>
+                         </div>
+                       </CardHeader>
+                       <CardContent>
+                         {/* <PasswordChangeForm /> */}
+                       </CardContent>
+                     </Card>
+                   </TabsContent>
+            </ Tabs>
           </div>
         );
 }
