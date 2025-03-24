@@ -12,10 +12,15 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Play, Square, AlertCircle, Info, Webcam, Camera, Loader2, Shield } from 'lucide-react';
+import { Play, Square, AlertCircle, Info, Webcam, Camera, Loader2, Shield, ChevronDown, ChevronUp } from 'lucide-react';
 import type { EmotionData, ProcessingStatus, EmotionLabel } from '@/components/emotion/types/emotion';
 import type { EmotionalMoment, EmotionTimelineEntry, OverallAnalysis } from '@/components/emotion/types/analysis';
 import type { Box } from '@vladmandic/face-api';
+import { collection, query, where, orderBy, getDocs, doc, setDoc } from "firebase/firestore";
+import { db } from '@/lib/firebase/config';
+import { useAuth } from '@/contexts/AuthContext';
+import { format } from "date-fns";
+
 
 interface AggregatedEmotionData {
     timestamp: number;
@@ -30,6 +35,14 @@ interface AggregatedEmotionData {
 interface EmotionSummary {
     emotion: EmotionLabel;
     intensity: number;
+}
+
+interface SessionData {
+    id: string;
+    userId: string;
+    timestamp: number;
+    overallAnalysis: any;
+    emotionalTimeline: any[];
 }
 
 export function AudienceEmotionDetectionPage() {
@@ -56,6 +69,17 @@ export function AudienceEmotionDetectionPage() {
     const [isFaceModelLoaded, setIsFaceModelLoaded] = useState(false);
     const [isInitializing, setIsInitializing] = useState(false);
     const [isFirstTrackingStart, setIsFirstTrackingStart] = useState(true);
+    const [sessionHistory, setSessionHistory] = useState<SessionData[]>([]);
+    const {user} = useAuth();
+    const [expandedSession, setExpandedSession] = useState<string | null>(null);
+
+    const toggleSession = (sessionId: string) => {
+    setExpandedSession(expandedSession === sessionId ? null : sessionId);
+    };
+
+    const getSessionDate = (timestamp: number) => {
+        return `Session on ${format(new Date(timestamp), "MMMM d, yyyy 'at' h:mm a")}`;
+    };
     
     // Cleanup effect
     useEffect(() => {
@@ -202,20 +226,71 @@ export function AudienceEmotionDetectionPage() {
         setIsTracking(true);
     };
     
-    const stopTracking = () => {
+    const stopTracking = async () => {
         setIsTracking(false);
-        
-        if (aggregatedData.length > 0) {
+    
+        if (aggregatedData.length > 0 && user) {
             try {
                 const analyzer = new EmotionAnalyzer();
                 const overall = analyzer.generateOverallAnalysis(aggregatedData);
                 const timeline = analyzer.processTimelineData(aggregatedData);
                 setAnalysis({ overall, timeline });
+    
+                // Generate session ID using timestamp
+                const sessionId = `${user.uid}_${Date.now()}`;
+    
+                const sessionData = {
+                    userId: user.uid,
+                    timestamp: Date.now(),
+                    overallAnalysis: overall,
+                    emotionalTimeline: timeline
+                };
+    
+                console.log("Saving session to Firestore:", sessionData);
+    
+                // Store in Firestore under "history" collection
+                await setDoc(doc(db, "history", sessionId), sessionData);
+    
+                console.log("✅ Session successfully saved to Firestore.");
             } catch (err) {
-                console.error('Error analyzing emotion data:', err);
+                console.error("❌ Error saving session to Firestore:", err);
             }
+        } else {
+            console.warn("⚠️ No valid session data or user not found.");
         }
     };
+    
+
+    useEffect(() => {
+        const fetchHistory = async () => {
+            if (!user) return;
+    
+            try {
+                const historyRef = collection(db, "history");
+                const q = query(
+                    historyRef,
+                    where("userId", "==", user.uid),
+                    orderBy("timestamp", "desc")
+                );
+                const querySnapshot = await getDocs(q);
+    
+                // Ensure correct data type
+                const history: SessionData[] = querySnapshot.docs.map((doc) => ({
+                    id: doc.id,
+                    ...(doc.data() as Omit<SessionData, "id">),
+                }));
+    
+                console.log("Fetched history:", history); 
+    
+                setSessionHistory(history);
+            } catch (error) {
+                console.error("Error fetching session history:", error);
+            }
+        };
+    
+        fetchHistory();
+    }, [user]);
+        
 
     return (
         <div className="container space-y-8 py-8">
@@ -473,23 +548,111 @@ export function AudienceEmotionDetectionPage() {
            </ TabsContent>
 
            <TabsContent value="sessions" className="space-y-6">
-                     <Card>
-                       <CardHeader>
-                         <div className="flex items-center gap-2">
-                          <Shield className="h-5 w-5 text-primary" />   
-                           <div>
-                             <CardTitle>AudienceAI History</CardTitle>
-                             <CardDescription>
-                               Review your sessions.
-                             </CardDescription>
-                           </div>
-                         </div>
-                       </CardHeader>
-                       <CardContent>
-                         {/* <PasswordChangeForm /> */}
-                       </CardContent>
-                     </Card>
-                   </TabsContent>
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center gap-2">
+                        <Shield className="h-5 w-5 text-primary" />
+                        <div>
+                            <CardTitle>AudienceAI History</CardTitle>
+                            <CardDescription>Review your past sessions and insights.</CardDescription>
+                        </div>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    {sessionHistory.length > 0 ? (
+                        sessionHistory.map((session) => (
+                            <div key={session.id} className="mb-4">
+                                {/* Collapsible Session Button */}
+                                <Button
+                                    variant="outline"
+                                    className="w-full flex justify-between items-center px-4 py-3 text-lg font-semibold"
+                                    onClick={() => toggleSession(session.id)}
+                                >
+                                    {getSessionDate(session.timestamp)}
+                                    {expandedSession === session.id ? <ChevronUp /> : <ChevronDown />}
+                                </Button>
+
+                                {/* Expanded Session Details */}
+                                {expandedSession === session.id && (
+                                    <Card className="mt-2 p-4 bg-gray-50 border border-gray-200 shadow-sm">
+                                        <CardContent className="space-y-4">
+                                            {/* Overall Analysis */}
+                                            <h3 className="text-xl font-semibold">Overall Analysis</h3>
+                                            <p className="text-gray-700">
+                                                {session.overallAnalysis?.primaryResponse || "No summary available."}
+                                            </p>
+
+                                            <p className="text-gray-700">
+                                                <strong>Emotional Pattern:</strong> {session.overallAnalysis?.emotionalPattern || "N/A"}
+                                            </p>
+
+                                            <p className="text-gray-700">
+                                                <strong>Notable Observations:</strong> {session.overallAnalysis?.notableObservation || "N/A"}
+                                            </p>
+
+                                            {/* Emotional Breakdown */}
+                                            <h3 className="text-xl font-semibold">Dominant Emotions</h3>
+                                            <ul className="list-disc pl-5 text-gray-700">
+                                                {session.overallAnalysis?.dominantEmotions?.map(
+                                                    (emotion: { emotion: string; intensity: number }, index: number) => (
+                                                        <li key={index}>
+                                                            {emotion.emotion.charAt(0).toUpperCase() + emotion.emotion.slice(1)}:
+                                                            {` ${emotion.intensity.toFixed(2)}%`}
+                                                        </li>
+                                                    )
+                                                ) || <li>No emotion data available.</li>}
+                                            </ul>
+
+                                            {/* Emotional Timeline */}
+                                            <h3 className="text-xl font-semibold">Emotional Timeline</h3>
+                                            <ul className="list-disc pl-5 text-gray-700">
+                                                {session.emotionalTimeline.length > 0 ? (
+                                                    session.emotionalTimeline.map(
+                                                        (
+                                                            entry: {
+                                                                timestamp: string;
+                                                                state: string;
+                                                                description: string;
+                                                                notableEmotions: string;
+                                                                dominantEmotions: { emotion: string; intensity: number }[];
+                                                            },
+                                                            index: number
+                                                        ) => (
+                                                            <li key={index} className="mb-2">
+                                                                <strong>{entry.timestamp}</strong> - {entry.state}
+                                                                <p className="text-gray-600">{entry.description}</p>
+                                                                <p className="text-gray-600">
+                                                                    <strong>Notable Emotions:</strong> {entry.notableEmotions}
+                                                                </p>
+                                                                <ul className="list-disc pl-5">
+                                                                    {entry.dominantEmotions.map(
+                                                                        (emotionData: { emotion: string; intensity: number }, j: number) => (
+                                                                            <li key={j}>
+                                                                                {emotionData.emotion.charAt(0).toUpperCase() +
+                                                                                    emotionData.emotion.slice(1)}
+                                                                                - {emotionData.intensity.toFixed(2)}%
+                                                                            </li>
+                                                                        )
+                                                                    )}
+                                                                </ul>
+                                                            </li>
+                                                        )
+                                                    )
+                                                ) : (
+                                                    <li>No timeline data available.</li>
+                                                )}
+                                            </ul>
+                                        </CardContent>
+                                    </Card>
+                                )}
+                            </div>
+                        ))
+                    ) : (
+                        <p className="text-gray-500">No session history available.</p>
+                    )}
+                </CardContent>
+            </Card>
+        </TabsContent>
             </ Tabs>
           </div>
         );
