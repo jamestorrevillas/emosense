@@ -14,7 +14,7 @@ const navigation: NavigationItem[] = [
   { name: 'Dashboard', href: '/app/dashboard', icon: Home },
   { name: 'Projects', href: '/app/projects', icon: Folder },
   { name: 'Playground', href: '/app/playground', icon: FlaskConical },
-  { name: 'Asan si fyang', href: '/app/audience-emotion-detection', icon: Scan},
+  { name: 'AudienceAI', href: '/app/audience-emotion-detection', icon: Scan},
   { name: 'Settings', href: '/app/settings', icon: Settings },
 ];
 
