@@ -1,89 +1,115 @@
 // src/components/emotion/tracker/WebcamFeed.tsx
-import { useState, useRef, useEffect, useCallback } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { useState, useRef, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 
 interface WebcamFeedProps {
   onStreamReady?: (stream: MediaStream) => void;
+  onError?: (error: string) => void;
   enabled: boolean;
 }
 
-export function WebcamFeed({ onStreamReady, enabled }: WebcamFeedProps) {
+export function WebcamFeed({ onStreamReady, onError, enabled }: WebcamFeedProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Cleanup function
-  const cleanup = useCallback(() => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => {
-        track.stop();
-        streamRef.current?.removeTrack(track);
-      });
-      streamRef.current = null;
-    }
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
-  }, []);
-
-  const startWebcam = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  
+  // Completely isolated useEffect for camera management
+  useEffect(() => {
+    console.log(`WebcamFeed effect running - enabled: ${enabled}`);
+    let isMounted = true;
+    
+    async function setupCamera() {
+      if (!enabled) return;
       
-      // Clean up any existing stream first
-      cleanup();
-
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
-          width: { ideal: 640 },
-          height: { ideal: 480 },
-          facingMode: 'user'
-        } 
-      });
-
-      streamRef.current = stream;
+      // Start loading state
+      if (isMounted) setLoading(true);
       
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        onStreamReady?.(stream);
+      try {
+        // Stop any existing tracks to prevent webcam light staying on
+        if (streamRef.current) {
+          console.log('Stopping existing tracks');
+          streamRef.current.getTracks().forEach(track => track.stop());
+          streamRef.current = null;
+        }
+        
+        console.log('Requesting media stream');
+        const newStream = await navigator.mediaDevices.getUserMedia({ 
+          video: { 
+            width: { ideal: 640 },
+            height: { ideal: 480 },
+            facingMode: 'user'
+          } 
+        });
+        
+        // Guard against state updates if component unmounted
+        if (!isMounted) {
+          console.log('Component unmounted, stopping new stream');
+          newStream.getTracks().forEach(track => track.stop());
+          return;
+        }
+        
+        console.log('Media stream obtained', newStream.getTracks().length, 'tracks');
+        streamRef.current = newStream;
+        
+        // Apply stream to video element
+        if (videoRef.current) {
+          videoRef.current.srcObject = newStream;
+          console.log('Stream applied to video element');
+        }
+        
+        // Notify parent component
+        onStreamReady?.(newStream);
+        
+        // Reset error state
+        if (isMounted) setError(null);
+      } catch (err) {
+        console.error('Failed to access camera:', err);
+        if (isMounted) {
+          const errorMsg = 'Could not access webcam. Please make sure you have granted camera permissions.';
+          setError(errorMsg);
+          onError?.(errorMsg);
+        }
+      } finally {
+        if (isMounted) setLoading(false);
       }
-    } catch (err) {
-      console.error('Error accessing webcam:', err);
-      setError('Could not access webcam. Please make sure you have granted camera permissions.');
-    } finally {
-      setLoading(false);
     }
-  };
-
-  // Handle camera enable/disable
-  useEffect(() => {
+    
     if (enabled) {
-      startWebcam();
+      setupCamera();
     } else {
-      cleanup();
+      // Clean up when disabled
+      if (streamRef.current) {
+        console.log('Cleanup: stopping tracks because enabled=false');
+        streamRef.current.getTracks().forEach(track => {
+          console.log(`Stopping track: ${track.kind} ${track.id}`);
+          track.stop();
+        });
+        streamRef.current = null;
+        
+        // Clear video element
+        if (videoRef.current) {
+          videoRef.current.srcObject = null;
+        }
+      }
     }
-  }, [enabled, cleanup]);
-
-  // Cleanup on unmount
-  useEffect(() => {
+    
+    // Cleanup function
     return () => {
-      cleanup();
+      console.log('WebcamFeed cleanup running');
+      isMounted = false;
+      
+      if (streamRef.current) {
+        console.log('Cleanup: stopping tracks on component unmount');
+        streamRef.current.getTracks().forEach(track => {
+          console.log(`Stopping track: ${track.kind} ${track.id}`);
+          track.stop();
+        });
+      }
     };
-  }, [cleanup]);
-
-  if (error) {
-    return (
-      <Card className="p-4 text-center">
-        <div className="text-destructive mb-2">{error}</div>
-        <Button onClick={startWebcam}>Try Again</Button>
-      </Card>
-    );
-  }
-
+  }, [enabled, onStreamReady, onError]);
+  
+  // Render based on state
   if (!enabled) {
     return (
       <div className="aspect-video flex items-center justify-center bg-muted rounded-lg">
@@ -91,22 +117,37 @@ export function WebcamFeed({ onStreamReady, enabled }: WebcamFeedProps) {
       </div>
     );
   }
-
+  
+  if (error) {
+    return (
+      <div className="aspect-video flex flex-col items-center justify-center bg-muted rounded-lg text-destructive">
+        <p className="text-center px-4">{error}</p>
+      </div>
+    );
+  }
+  
   return (
-    <div className="relative">
+    <div className="relative aspect-video bg-muted rounded-lg overflow-hidden">
       {loading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-background/50">
-          <Loader2 className="h-8 w-8 animate-spin" />
+        <div className="absolute inset-0 flex items-center justify-center bg-black/20 z-10">
+          <Loader2 className="h-8 w-8 animate-spin text-white" />
         </div>
       )}
+      
       <video
         ref={videoRef}
         autoPlay
         playsInline
         muted
-        className="w-full rounded-lg bg-muted"
-        onCanPlay={() => setLoading(false)}
+        className="w-full h-full object-cover"
       />
+      
+      {/* Fallback if video isn't showing */}
+      {!loading && !streamRef.current && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <p className="text-muted-foreground">Initializing camera...</p>
+        </div>
+      )}
     </div>
   );
 }
