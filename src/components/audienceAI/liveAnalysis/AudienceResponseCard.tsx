@@ -1,9 +1,9 @@
-// src/components/audienceAI/AudienceResponseCard.tsx
+// src/components/audienceAI/liveAnalysis/AudienceResponseCard.tsx
 import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Brain, Zap, LineChart, AlertCircle } from 'lucide-react';
 import { EmotionLabel } from '@/components/emotion/types/emotion';
-import type { AudienceEmotionData } from './trackers/MultiPersonEmotionTracker';
+import type { AudienceEmotionData } from '../trackers/MultiPersonEmotionTracker';
 
 // Emotion colors for consistent visualization
 const EMOTION_COLORS: Record<string, string> = {
@@ -239,7 +239,14 @@ export function AudienceResponseCard({
               return (
                 <div key={emotion} className="space-y-1">
                   <div className="flex justify-between items-center text-sm">
-                    <span>{EMOTION_DISPLAY_NAMES[emotion] || emotion}</span>
+                    <div className="flex items-center gap-2">
+                      {/* Add colored dot */}
+                      <div 
+                        className="w-3 h-3 rounded-full flex-shrink-0" 
+                        style={{ backgroundColor: emotionData.color }}
+                      />
+                      <span>{EMOTION_DISPLAY_NAMES[emotion] || emotion}</span>
+                    </div>
                     <span>{Math.round(emotionData.intensity)}%</span>
                   </div>
                   <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">

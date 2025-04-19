@@ -1,4 +1,4 @@
-// src/components/audienceAI/PresenterViewCard.tsx
+// src/components/audienceAI/liveAnalysis/PresenterViewCard.tsx
 import { useRef, useEffect, MutableRefObject } from "react";
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

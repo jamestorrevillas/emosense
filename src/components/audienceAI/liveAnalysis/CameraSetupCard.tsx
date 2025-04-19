@@ -1,4 +1,4 @@
-// src/components/audienceAI/CameraSetupCard.tsx
+// src/components/audienceAI/liveAnalysis/CameraSetupCard.tsx
 // No imports needed for React hooks
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
