@@ -29,7 +29,7 @@ export const MultiPersonFaceTracker = forwardRef<TrackerRefHandle, MultiPersonFa
   stream,
   isActive,
   showFaceBoxes = true,
-  detectionInterval = 100,
+  detectionInterval = 150, // Slightly increased interval for heavier model
   onFacesDetected,
   onModelLoaded,
   resetKey
@@ -93,7 +93,7 @@ export const MultiPersonFaceTracker = forwardRef<TrackerRefHandle, MultiPersonFa
       try {
         console.log('Loading face detection models for AudienceAI...');
         await Promise.all([
-          faceapi.nets.tinyFaceDetector.loadFromUri('/models/face-api'),
+          faceapi.nets.ssdMobilenetv1.loadFromUri('/models/face-api'), // Using SSD MobileNet instead
           faceapi.nets.faceLandmark68Net.loadFromUri('/models/face-api')
         ]);
 
@@ -141,6 +141,15 @@ export const MultiPersonFaceTracker = forwardRef<TrackerRefHandle, MultiPersonFa
     
     if (!stream) return;
     
+    // Set video constraints to higher resolution
+    if (stream.getVideoTracks().length > 0) {
+      const videoTrack = stream.getVideoTracks()[0];
+      if (videoTrack.getConstraints) {
+        const constraints = videoTrack.getConstraints();
+        console.log('Video track constraints:', constraints);
+      }
+    }
+    
     // Small delay to ensure clean state between stream switches
     const timer = setTimeout(() => {
       if (!mounted.current || !videoRef.current) return;
@@ -185,12 +194,12 @@ export const MultiPersonFaceTracker = forwardRef<TrackerRefHandle, MultiPersonFa
         return;
       }
 
-      // Detect all faces in the frame
+      // Detect all faces in the frame using SSD MobileNet
       const detections = await faceapi.detectAllFaces(
         videoRef.current,
-        new faceapi.TinyFaceDetectorOptions({
-          inputSize: 320,
-          scoreThreshold: 0.5 
+        new faceapi.SsdMobilenetv1Options({
+          minConfidence: 0.2, // Lower threshold for better distance detection
+          maxResults: 100 // Allow more face detections
         })
       ).withFaceLandmarks();
 
@@ -198,38 +207,62 @@ export const MultiPersonFaceTracker = forwardRef<TrackerRefHandle, MultiPersonFa
 
       const currentTime = Date.now();
       const newFacesMap = new Map<string, TrackedFace>();
-      const FACE_TIMEOUT = 500; // 500ms for faster response to changes
+      const FACE_TIMEOUT = 1200; // Increased from 500ms to 1200ms for better persistence
 
       // Update or add new faces
       for (const detection of detections) {
+        // Skip extremely small faces (likely false positives)
+        if (detection.detection.box.width < 15 || detection.detection.box.height < 15) {
+          continue; 
+        }
+        
         // Try to match with existing tracked faces
         let matchedId: string | null = null;
         let minDistance = Number.MAX_VALUE;
         
-        // Tracking by position
+        // Tracking by position with more lenient matching for distance detection
         for (const [id, trackedFace] of trackedFacesRef.current.entries()) {
           const centerX1 = trackedFace.box.x + trackedFace.box.width / 2;
           const centerY1 = trackedFace.box.y + trackedFace.box.height / 2;
           const centerX2 = detection.detection.box.x + detection.detection.box.width / 2;
           const centerY2 = detection.detection.box.y + detection.detection.box.height / 2;
           
+          // Calculate distance as percentage of frame size for size-independent matching
           const distance = Math.sqrt(
             Math.pow(centerX1 - centerX2, 2) + 
             Math.pow(centerY1 - centerY2, 2)
           );
           
+          // Scale threshold by face size for better matching at distance
+          const threshold = Math.max(
+            detection.detection.box.width, 
+            detection.detection.box.height
+          ) * 0.75; // More lenient threshold
+          
           // If close enough to be considered the same face
-          if (distance < Math.max(detection.detection.box.width, detection.detection.box.height) / 2 && distance < minDistance) {
+          if (distance < threshold && distance < minDistance) {
             matchedId = id;
             minDistance = distance;
           }
         }
         
         if (matchedId) {
-          // Update existing face
+          // Update existing face with some position smoothing for stability
+          const existingFace = trackedFacesRef.current.get(matchedId)!;
+          // Simple smoothing to reduce jitter
+          const smoothX = existingFace.box.x * 0.3 + detection.detection.box.x * 0.7;
+          const smoothY = existingFace.box.y * 0.3 + detection.detection.box.y * 0.7;
+          const smoothWidth = existingFace.box.width * 0.3 + detection.detection.box.width * 0.7;
+          const smoothHeight = existingFace.box.height * 0.3 + detection.detection.box.height * 0.7;
+          
           newFacesMap.set(matchedId, {
             id: matchedId,
-            box: detection.detection.box,
+            box: new faceapi.Box({
+              x: smoothX,
+              y: smoothY,
+              width: smoothWidth,
+              height: smoothHeight
+            }),
             landmarks: detection.landmarks,
             detection: detection.detection,
             lastSeen: currentTime,
@@ -288,7 +321,7 @@ export const MultiPersonFaceTracker = forwardRef<TrackerRefHandle, MultiPersonFa
             for (const face of newFacesMap.values()) {
               // Apply padding to ensure the box includes the chin and full face
               const paddingX = 0.05 * face.box.width; // 5% horizontal padding
-              const paddingTop = 0.15 * face.box.height; // 5% padding at the top
+              const paddingTop = 0.15 * face.box.height; // 15% padding at the top
               const paddingBottom = 0.15 * face.box.height; // 15% extra padding at the bottom for chin
               
               // Create padded box
@@ -307,12 +340,21 @@ export const MultiPersonFaceTracker = forwardRef<TrackerRefHandle, MultiPersonFa
                 height: paddedBox.height * scaleY
               };
               
-              // Draw a simple box without label
+              // Determine age of the face detection for color coding
+              const faceFreshness = Math.min(1, (currentTime - face.lastSeen) / FACE_TIMEOUT);
+              const alpha = 1 - faceFreshness; // Fade out old detections
+              
+              // Draw a box with transparency based on detection age
               context.beginPath();
               context.rect(scaledBox.x, scaledBox.y, scaledBox.width, scaledBox.height);
-              context.lineWidth = 0.5;
-              context.strokeStyle = '#00FF00';
+              context.lineWidth = 2;
+              context.strokeStyle = `rgba(0, 255, 0, ${alpha})`; // Green with variable alpha
               context.stroke();
+              
+              // Add ID label for debugging
+              context.font = '10px Arial';
+              context.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+              context.fillText(face.id, scaledBox.x, scaledBox.y - 5);
             }
           }
         }

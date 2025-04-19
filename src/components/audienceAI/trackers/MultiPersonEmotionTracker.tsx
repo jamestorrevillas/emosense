@@ -40,8 +40,8 @@ const EMOTION_THRESHOLDS: Record<EmotionLabel, number> = {
 };
 
 // Processing intervals
-const FACE_DETECTION_INTERVAL = 100; // ms between face detection runs
-const EMOTION_DETECTION_INTERVAL = 250; // ms between emotion detection runs (less frequent)
+const FACE_DETECTION_INTERVAL = 150; // ms between face detection runs - increased for heavier model
+const EMOTION_DETECTION_INTERVAL = 300; // ms between emotion detection runs (less frequent)
 
 // Extended interface for tracked faces including emotions
 export interface TrackedFaceWithEmotion {
@@ -125,9 +125,9 @@ export const MultiPersonEmotionTracker = forwardRef<EmotionTrackerRefHandle, Mul
   
   // Model refs
   const emotionModelRef = useRef<tf.LayersModel | null>(null);
-  const faceDetectionOptionsRef = useRef(new faceapi.TinyFaceDetectorOptions({
-    inputSize: 320,
-    scoreThreshold: 0.5
+  const faceDetectionOptionsRef = useRef(new faceapi.SsdMobilenetv1Options({
+    minConfidence: 0.2,
+    maxResults: 100
   }));
   
   // Loading state refs
@@ -221,6 +221,8 @@ export const MultiPersonEmotionTracker = forwardRef<EmotionTrackerRefHandle, Mul
       // Determine box color based on recency and emotion data
       let boxColor = '#FFFFFF'; // Default white
       const timeSinceLastSeen = currentTime - face.lastSeen;
+      const FACE_TIMEOUT = 1200; // Match the longer timeout
+      const faceFreshness = 1 - Math.min(1, timeSinceLastSeen / FACE_TIMEOUT);
       
       if (face.emotions?.dominantEmotion) {
         // Use different colors for different emotions
@@ -242,11 +244,11 @@ export const MultiPersonEmotionTracker = forwardRef<EmotionTrackerRefHandle, Mul
         boxColor = '#00FF00'; // Green for newly detected faces
       }
       
-      // Draw box with dynamic color
+      // Draw box with dynamic color and transparency based on freshness
       context.beginPath();
       context.rect(scaledBox.x, scaledBox.y, scaledBox.width, scaledBox.height);
       context.lineWidth = 2;
-      context.strokeStyle = boxColor;
+      context.strokeStyle = boxColor.replace(')', `, ${faceFreshness})`).replace('rgb', 'rgba');
       context.stroke();
       
       // Only show emotion label if enabled and we have emotion data
@@ -256,7 +258,7 @@ export const MultiPersonEmotionTracker = forwardRef<EmotionTrackerRefHandle, Mul
         
         if (score > 5) { // Only show if above threshold
           // Add emotion label with score
-          context.fillStyle = 'rgba(0, 0, 0, 0.7)';
+          context.fillStyle = `rgba(0, 0, 0, ${faceFreshness * 0.7})`;
           context.fillRect(
             scaledBox.x, 
             scaledBox.y - 24, 
@@ -265,11 +267,18 @@ export const MultiPersonEmotionTracker = forwardRef<EmotionTrackerRefHandle, Mul
           );
           
           context.font = '12px Arial';
-          context.fillStyle = '#FFFFFF';
+          context.fillStyle = `rgba(255, 255, 255, ${faceFreshness})`;
           context.fillText(
             `${emotion} (${Math.round(score)}%)`, 
             scaledBox.x + 5, 
             scaledBox.y - 8
+          );
+          
+          // Add face ID for debugging
+          context.fillText(
+            `ID: ${face.id.split('_')[1]}`,
+            scaledBox.x + 5,
+            scaledBox.y + scaledBox.height + 14
           );
         }
       }
@@ -413,7 +422,7 @@ export const MultiPersonEmotionTracker = forwardRef<EmotionTrackerRefHandle, Mul
       try {
         console.log('Loading face detection models for AudienceAI...');
         await Promise.all([
-          faceapi.nets.tinyFaceDetector.loadFromUri('/models/face-api'),
+          faceapi.nets.ssdMobilenetv1.loadFromUri('/models/face-api'), // Using SSD MobileNet instead
           faceapi.nets.faceLandmark68Net.loadFromUri('/models/face-api')
         ]);
   
@@ -473,7 +482,7 @@ export const MultiPersonEmotionTracker = forwardRef<EmotionTrackerRefHandle, Mul
         console.error('Error loading emotion detection model:', error);
         if (onModelsLoadedRef.current) {
           onModelsLoadedRef.current({
-            emotion: true
+            emotion: false
           });
         }
       } finally {
@@ -564,15 +573,20 @@ export const MultiPersonEmotionTracker = forwardRef<EmotionTrackerRefHandle, Mul
 
       const currentTime = Date.now();
       const newFacesMap = new Map<string, TrackedFaceWithEmotion>();
-      const FACE_TIMEOUT = 500; // How long to keep tracking a face after it's lost
+      const FACE_TIMEOUT = 1200; // How long to keep tracking a face after it's lost
 
       // Update or add new faces
       for (const detection of detections) {
+        // Skip extremely small faces which can cause problems with emotion detection
+        if (detection.detection.box.width < 15 || detection.detection.box.height < 15) {
+          continue;
+        }
+        
         // Try to match with existing tracked faces
         let matchedId: string | null = null;
         let minDistance = Number.MAX_VALUE;
         
-        // Simple tracking by position
+        // Tracking by position with more lenient matching for distance
         for (const [id, trackedFace] of trackedFacesRef.current.entries()) {
           const centerX1 = trackedFace.box.x + trackedFace.box.width / 2;
           const centerY1 = trackedFace.box.y + trackedFace.box.height / 2;
@@ -584,9 +598,13 @@ export const MultiPersonEmotionTracker = forwardRef<EmotionTrackerRefHandle, Mul
             Math.pow(centerY1 - centerY2, 2)
           );
           
-          // If close enough to be considered the same face
-          if (distance < Math.max(detection.detection.box.width, detection.detection.box.height) / 2 
-              && distance < minDistance) {
+          // Scale threshold by face size for better matching at distance
+          const threshold = Math.max(
+            detection.detection.box.width, 
+            detection.detection.box.height
+          ) * 0.75; // More lenient threshold
+          
+          if (distance < threshold && distance < minDistance) {
             matchedId = id;
             minDistance = distance;
           }
@@ -595,9 +613,21 @@ export const MultiPersonEmotionTracker = forwardRef<EmotionTrackerRefHandle, Mul
         if (matchedId) {
           // Update existing face position but preserve emotion data
           const existingFace = trackedFacesRef.current.get(matchedId);
+          
+          // Simple smoothing to reduce jitter
+          const smoothX = existingFace!.box.x * 0.3 + detection.detection.box.x * 0.7;
+          const smoothY = existingFace!.box.y * 0.3 + detection.detection.box.y * 0.7;
+          const smoothWidth = existingFace!.box.width * 0.3 + detection.detection.box.width * 0.7;
+          const smoothHeight = existingFace!.box.height * 0.3 + detection.detection.box.height * 0.7;
+          
           newFacesMap.set(matchedId, {
             id: matchedId,
-            box: detection.detection.box,
+            box: new faceapi.Box({
+              x: smoothX,
+              y: smoothY,
+              width: smoothWidth,
+              height: smoothHeight
+            }),
             landmarks: detection.landmarks,
             detection: detection.detection,
             lastSeen: currentTime,
@@ -652,7 +682,7 @@ export const MultiPersonEmotionTracker = forwardRef<EmotionTrackerRefHandle, Mul
     }
   }, [stream, faceModelLoaded, showFaceBoxes, generateFaceId]);
 
-  // Process emotions for tracked faces
+  // Process emotions for tracked faces with improved handling for distant faces
   const processEmotions = useCallback(async () => {
     if (!stream || stream !== streamRef.current || 
         !emotionModelLoaded || !emotionModelRef.current ||
@@ -682,7 +712,7 @@ export const MultiPersonEmotionTracker = forwardRef<EmotionTrackerRefHandle, Mul
       tempCanvas.height = 48;
       
       // Process each face, but limit to max faces per frame for performance
-      // Sort faces by recency (process newest faces first)
+      // Sort faces by combination of recency and last emotion process time
       const sortedFaces = Array.from(trackedFacesRef.current.values())
         .sort((a, b) => {
           // First sort by emotion processing time (oldest first)
@@ -693,7 +723,9 @@ export const MultiPersonEmotionTracker = forwardRef<EmotionTrackerRefHandle, Mul
           }
           // Then by how recently seen (newest first)
           return b.lastSeen - a.lastSeen;
-        });
+        })
+        // Filter for minimum face size to improve accuracy for distant faces
+        .filter(face => face.box.width >= 30 && face.box.height >= 30);
       
       // Process up to maxFacesPerFrame faces per frame
       const facesToProcess = sortedFaces.slice(0, maxFacesPerFrame);
@@ -711,19 +743,38 @@ export const MultiPersonEmotionTracker = forwardRef<EmotionTrackerRefHandle, Mul
           const paddedWidth = Math.min(videoRef.current.videoWidth - paddedX, width + (paddingX * 2));
           const paddedHeight = Math.min(videoRef.current.videoHeight - paddedY, height + (paddingY * 2));
           
-          // Draw face to temp canvas for processing
+          // Draw face to temp canvas for processing with enhanced contrast
           tempCtx.drawImage(
             videoRef.current,
             paddedX, paddedY, paddedWidth, paddedHeight,
             0, 0, 48, 48
           );
           
-          // Get image data and process
+          // Apply basic enhancement (optional)
+          // Increase contrast for better emotion detection
           const imageData = tempCtx.getImageData(0, 0, 48, 48);
+          const data = imageData.data;
+          
+          // Simple contrast enhancement if needed
+          const contrastFactor = 1.1; // Slight boost
+          for (let i = 0; i < data.length; i += 4) {
+            // Apply to RGB channels
+            for (let j = 0; j < 3; j++) {
+              const channel = data[i + j];
+              // Map to [-0.5, 0.5] range, apply contrast, map back
+              data[i + j] = Math.max(0, Math.min(255, 
+                Math.round(((channel / 255 - 0.5) * contrastFactor + 0.5) * 255)
+              ));
+            }
+          }
+          tempCtx.putImageData(imageData, 0, 0);
+          
+          // Get enhanced image data
+          const enhancedData = tempCtx.getImageData(0, 0, 48, 48);
           
           // Convert to tensor and normalize
           const tensor = tf.tidy(() => {
-            return tf.browser.fromPixels(imageData)
+            return tf.browser.fromPixels(enhancedData)
               .mean(2) // Convert to grayscale
               .expandDims(2) // Add channel dimension
               .expandDims(0) // Add batch dimension
@@ -754,7 +805,9 @@ export const MultiPersonEmotionTracker = forwardRef<EmotionTrackerRefHandle, Mul
           
           EMOTION_LABELS.forEach((emotion, index) => {
             const score = calibratedScores[index];
-            const thresholdedScore = score > EMOTION_THRESHOLDS[emotion] ? score : 0;
+            // Lower thresholds slightly for distant faces
+            const adjustedThreshold = EMOTION_THRESHOLDS[emotion] * 0.9;
+            const thresholdedScore = score > adjustedThreshold ? score : 0;
             finalScores[emotion] = Math.max(0, Math.min(100, thresholdedScore * 100));
           });
           
@@ -804,7 +857,7 @@ export const MultiPersonEmotionTracker = forwardRef<EmotionTrackerRefHandle, Mul
     } finally {
       emotionProcessingRef.current = false;
     }
-}, [stream, emotionModelLoaded, maxFacesPerFrame, showFaceBoxes, softmax, applyCalibration]);
+  }, [stream, emotionModelLoaded, maxFacesPerFrame, showFaceBoxes, softmax, applyCalibration]);
 
   // Setup detection intervals
   useEffect(() => {
