@@ -12,11 +12,11 @@ import { Info } from 'lucide-react';
 import type { AudienceSession } from '@/types/audienceAI';
 import { TrackedFace, TrackerRefHandle } from '@/components/audienceAI/trackers/MultiPersonFaceTracker';
 import { AudienceEmotionData } from '@/components/audienceAI/trackers/MultiPersonEmotionTracker';
-import { AudienceResponseCard } from '@/components/audienceAI/AudienceResponseCard';
-import { CameraSetupCard } from '@/components/audienceAI/CameraSetupCard';
-import { PresenterViewCard } from '@/components/audienceAI/PresenterViewCard';
+import { AudienceResponseCard } from '@/components/audienceAI/liveAnalysis/AudienceResponseCard';
+import { CameraSetupCard } from '@/components/audienceAI/liveAnalysis/CameraSetupCard';
+import { PresenterViewCard } from '@/components/audienceAI/liveAnalysis/PresenterViewCard';
 import SessionManager from '@/components/audienceAI/session/SessionManager';
-import SessionHistoryList from '@/components/audienceAI/SessionHistoryList';
+import SessionHistoryList from '@/components/audienceAI/history/SessionHistoryList';
 
 // Helper function to clean camera names
 const cleanCameraName = (label: string): string => {
@@ -555,11 +555,9 @@ export function AudienceAIPage() {
       <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList className="mb-6">
           <TabsTrigger value="live" className="flex items-center gap-2">
-            <Info className="h-4 w-4" />
             Live Analysis
           </TabsTrigger>
           <TabsTrigger value="history" className="flex items-center gap-2">
-            <Info className="h-4 w-4" />
             Session History
           </TabsTrigger>
         </TabsList>
