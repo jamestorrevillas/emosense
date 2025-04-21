@@ -4,7 +4,7 @@ import * as faceapi from '@vladmandic/face-api';
 import * as tf from '@tensorflow/tfjs';
 import { EmotionLabel } from 'src/components/emotion/types/emotion';
 
-// Emotion scoring and calibration constants (from EmotionTracker.tsx)
+// Emotion scoring constants
 const EMOTION_LABELS: EmotionLabel[] = [
   'neutral', 
   'happiness', 
@@ -16,28 +16,8 @@ const EMOTION_LABELS: EmotionLabel[] = [
   'contempt'
 ];
 
-// Calibration factors remain the same as in EmotionTracker
-const CALIBRATION_FACTORS: Record<EmotionLabel, number> = {
-  'neutral': 0.35,
-  'happiness': 0.55,
-  'surprise': 1.4,
-  'sadness': 1.8,
-  'anger': 2.0,
-  'disgust': 5.0,
-  'fear': 4.0,
-  'contempt': 6.0
-};
-
-const EMOTION_THRESHOLDS: Record<EmotionLabel, number> = {
-  'neutral': 0.22,
-  'happiness': 0.18,
-  'surprise': 0.16,
-  'sadness': 0.15,
-  'anger': 0.13,
-  'disgust': 0.09,
-  'fear': 0.11,
-  'contempt': 0.08
-};
+// Common minimum confidence threshold
+const MIN_EMOTION_CONFIDENCE = 0.05;
 
 // Processing intervals
 const FACE_DETECTION_INTERVAL = 150; // ms between face detection runs - increased for heavier model
@@ -150,7 +130,7 @@ export const MultiPersonEmotionTracker = forwardRef<EmotionTrackerRefHandle, Mul
     return `face_${faceIdCounterRef.current++}`;
   }, []);
   
-  // Helper functions for emotion processing
+  // Helper function for emotion processing - normalize using softmax
   const softmax = useCallback((arr: number[]): number[] => {
     const maxVal = Math.max(...arr);
     const expValues = arr.map(val => Math.exp(val - maxVal));
@@ -158,15 +138,6 @@ export const MultiPersonEmotionTracker = forwardRef<EmotionTrackerRefHandle, Mul
     return expValues.map(val => (val / sumExp));
   }, []);
 
-  const applyCalibration = useCallback((scores: number[]): number[] => {
-    const calibratedScores = scores.map((score, index) => 
-      score * CALIBRATION_FACTORS[EMOTION_LABELS[index]]
-    );
-    
-    const sum = calibratedScores.reduce((a, b) => a + b, 0);
-    return calibratedScores.map(score => score / sum);
-  }, []);
-  
   // Draw faces and emotions on canvas
   const drawFacesOnCanvas = useCallback((
     facesMap: Map<string, TrackedFaceWithEmotion>, 
@@ -682,7 +653,7 @@ export const MultiPersonEmotionTracker = forwardRef<EmotionTrackerRefHandle, Mul
     }
   }, [stream, faceModelLoaded, showFaceBoxes, generateFaceId]);
 
-  // Process emotions for tracked faces with improved handling for distant faces
+  // Process emotions for tracked faces with simplified approach
   const processEmotions = useCallback(async () => {
     if (!stream || stream !== streamRef.current || 
         !emotionModelLoaded || !emotionModelRef.current ||
@@ -787,11 +758,10 @@ export const MultiPersonEmotionTracker = forwardRef<EmotionTrackerRefHandle, Mul
           const emotionScores = await predictions.data();
           const scoresArray = Array.from(emotionScores);
           
-          // Process scores
+          // Process scores with softmax and convert to percentages
           const normalizedScores = softmax(scoresArray);
-          const calibratedScores = applyCalibration(normalizedScores);
           
-          // Apply thresholds and scale to percentages
+          // Convert to percentages and apply common minimum threshold
           const finalScores: Record<EmotionLabel, number> = {
             neutral: 0,
             happiness: 0,
@@ -804,11 +774,10 @@ export const MultiPersonEmotionTracker = forwardRef<EmotionTrackerRefHandle, Mul
           };
           
           EMOTION_LABELS.forEach((emotion, index) => {
-            const score = calibratedScores[index];
-            // Lower thresholds slightly for distant faces
-            const adjustedThreshold = EMOTION_THRESHOLDS[emotion] * 0.9;
-            const thresholdedScore = score > adjustedThreshold ? score : 0;
-            finalScores[emotion] = Math.max(0, Math.min(100, thresholdedScore * 100));
+            const score = normalizedScores[index];
+            // Apply common minimum threshold
+            const filteredScore = score > MIN_EMOTION_CONFIDENCE ? score : 0;
+            finalScores[emotion] = Math.max(0, Math.min(100, filteredScore * 100));
           });
           
           // Find dominant emotion
@@ -857,7 +826,7 @@ export const MultiPersonEmotionTracker = forwardRef<EmotionTrackerRefHandle, Mul
     } finally {
       emotionProcessingRef.current = false;
     }
-  }, [stream, emotionModelLoaded, maxFacesPerFrame, showFaceBoxes, softmax, applyCalibration]);
+  }, [stream, emotionModelLoaded, maxFacesPerFrame, showFaceBoxes, softmax]);
 
   // Setup detection intervals
   useEffect(() => {
