@@ -239,9 +239,9 @@ This project was developed as part of a Software Engineering course curriculum. 
 
 ## Contact
 
-James C. Torrevillas - [@jamestorrevillas](https://github.com/jamestorrevillas)
-Carl Gerard S. Resurreccion - [@carlgerardresurreccion](https://github.com/carlgerardresurreccion)
-Alyssa Vivien S. Cañas - [@Canas-AlyssaVivien](https://github.com/Canas-AlyssaVivien)
+- James C. Torrevillas - [@jamestorrevillas](https://github.com/jamestorrevillas)
+- Carl Gerard S. Resurreccion - [@carlgerardresurreccion](https://github.com/carlgerardresurreccion)
+- Alyssa Vivien S. Cañas - [@Canas-AlyssaVivien](https://github.com/Canas-AlyssaVivien)
 
 Project Link: [https://github.com/jamestorrevillas/emosense](https://github.com/jamestorrevillas/emosense)
 
