@@ -1,16 +1,30 @@
-# EmoSense - Video Emotion Analytics Platform
+# EmoSense - Emotion Analytics Platform
 
-EmoSense is an advanced video emotion analytics platform that combines real-time emotion tracking with comprehensive feedback collection. The platform enables content creators and researchers to gather deep insights into viewer emotional responses and engagement through AI-powered facial expression analysis.
+EmoSense is an advanced emotion analytics platform that combines real-time emotion tracking with comprehensive feedback collection tools. The platform enables content creators, researchers, and presenters to gather deep insights into audience emotional responses and engagement through AI-powered facial expression analysis, both for video content and live presentations.
 
 ![EmoSense Logo](./src/assets/images/logo.png)
 
+**Website: [https://emosenseai.netlify.app/](https://emosenseai.netlify.app/)**
+
 ## Features
 
-### 🎭 Real-time Emotion Analytics
-- Live emotion detection during video playback
-- Advanced calibration for accurate emotion recognition
+### 🎬 Video Review System
+- Video content analysis with real-time emotion tracking
+- Customizable feedback collection through ratings and surveys
+- Comprehensive viewer response analytics
+- Secure token-based sharing for collecting feedback
+
+### 👥 AudienceAI
+- Real-time audience emotion analysis during live presentations
+- Multi-face detection and tracking
+- Presentation metrics and insights
+- Session history and performance tracking
+
+### 🎭 Emotion Analytics
+- Live emotion detection with advanced calibration
 - Support for 8 core emotions: happiness, surprise, neutral, sadness, anger, disgust, fear, and contempt
 - Face detection with stability tracking
+- Privacy-first approach with no face data storage
 
 ### 📊 Comprehensive Analytics
 - Emotional response trend visualization
@@ -19,16 +33,10 @@ EmoSense is an advanced video emotion analytics platform that combines real-time
 - Key moment identification
 - Survey response analytics
 
-### 📝 Feedback Collection
-- Customizable quick rating system
-- In-depth survey builder
-- Multiple question types (Multiple Choice, Rating Scale, Text, Checkbox, Yes/No)
-- Token-based secure sharing
-
 ### 🔒 Security & Privacy
 - Secure authentication system
 - Token-based access control
-- No video storage - real-time analysis only
+- No video or face image storage - real-time analysis only
 - Anonymous response collection option
 
 ## Tech Stack
@@ -84,7 +92,7 @@ yarn install
            allow read: if true;
          }
          
-         match /projects/{projectId} {
+         match /videoReviews/{reviewId} {
            allow create: if request.auth != null;
            allow read: if true;
            allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
@@ -92,15 +100,21 @@ yarn install
            match /responses/{responseId} {
              allow create: if true;
              allow read: if request.auth != null && 
-               get(/databases/$(database)/documents/projects/$(projectId)).data.userId == request.auth.uid;
+               get(/databases/$(database)/documents/videoReviews/$(reviewId)).data.userId == request.auth.uid;
            }
+         }
+         
+         match /audienceSessions/{sessionId} {
+           allow create: if request.auth != null;
+           allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+           allow update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
          }
          
          match /tokens/{tokenId} {
            allow create: if request.auth != null;
            allow read: if true;
            allow delete, update: if request.auth != null && 
-             get(/databases/$(database)/documents/projects/$(resource.data.projectId)).data.userId == request.auth.uid;
+             get(/databases/$(database)/documents/videoReviews/$(resource.data.projectId)).data.userId == request.auth.uid;
          }
        }
      }
@@ -111,7 +125,7 @@ yarn install
    - Navigate to Dashboard
    - Create two upload presets:
      - Name: `emosense_profiles` for profile images
-     - Name: `emosense_videos` for project videos
+     - Name: `emosense_videos` for video reviews
    - Set both presets to "Unsigned" uploading
    - Copy your Cloud Name, API Key, and API Secret
 
@@ -143,18 +157,24 @@ yarn dev
    - Sign up for an account or sign in
    - Manage your profile settings
 
-2. **Creating Projects**
+2. **Video Review**
    - Upload your video content
    - Configure quick rating options
    - Build custom surveys
    - Generate share links
 
-3. **Collecting Feedback**
-   - Share your project link with viewers
+3. **AudienceAI**
+   - Start a live analysis session
+   - Position your camera to capture your audience
+   - Get real-time feedback on audience emotions
+   - Review session results
+
+4. **Collecting Feedback**
+   - Share your video review link with viewers
    - Track real-time responses
    - View analytics and insights
 
-4. **Analyzing Results**
+5. **Analyzing Results**
    - View emotional response trends
    - Analyze key moments
    - Export response data
@@ -182,13 +202,21 @@ npm run format
 
 ```
 src/
-├── assets/        # Static assets
-├── components/    # React components
-├── contexts/      # React contexts
-├── lib/           # Utility functions and configurations
-├── pages/         # Page components
-├── styles/        # Global styles
-└── types/         # TypeScript type definitions
+├── assets/                 # Static assets
+├── components/
+│   ├── auth/               # Authentication components
+│   ├── dashboard/          # Dashboard components
+│   ├── emotion/            # Emotion detection and analysis
+│   ├── feedbackSession/    # Feedback collection flow
+│   ├── videoReview/        # Video review management
+│   ├── audienceAI/         # Audience analysis components
+│   ├── ui/                 # shadcn/ui components
+│   └── shared/             # Layout and shared components
+├── contexts/               # React contexts
+├── lib/                    # Utility functions and configurations
+├── pages/                  # Page components
+├── styles/                 # Global styles
+└── types/                  # TypeScript type definitions
 ```
 
 ## Contributing
@@ -211,7 +239,9 @@ This project was developed as part of a Software Engineering course curriculum. 
 
 ## Contact
 
-James Torrevillas - [@jamestorrevillas](https://github.com/jamestorrevillas)
+James C. Torrevillas - [@jamestorrevillas](https://github.com/jamestorrevillas)
+Carl Gerard S. Resurreccion - [@carlgerardresurreccion](https://github.com/carlgerardresurreccion)
+Alyssa Vivien S. Cañas - [@Canas-AlyssaVivien](https://github.com/Canas-AlyssaVivien)
 
 Project Link: [https://github.com/jamestorrevillas/emosense](https://github.com/jamestorrevillas/emosense)
 
