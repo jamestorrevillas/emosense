@@ -1,4 +1,4 @@
-// src/components/review/steps/QuickRatingStep.tsx
+// src/components/feedbackSession/steps/QuickRatingStep.tsx
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useReview } from "@/contexts/FeedbackSessionContext";

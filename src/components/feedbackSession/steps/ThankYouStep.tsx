@@ -1,4 +1,4 @@
-// src/components/review/steps/ThankYouStep.tsx
+// src/components/feedbackSession/steps/ThankYouStep.tsx
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useReview } from "@/contexts/FeedbackSessionContext";
 import { CheckCircle2 } from "lucide-react";

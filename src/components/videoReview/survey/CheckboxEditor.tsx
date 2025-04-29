@@ -1,4 +1,4 @@
-// src\components\projects\survey\CheckboxEditor.tsx
+// src\components\videoReview\survey\CheckboxEditor.tsx
 import { useState } from "react";
 import { CheckboxQuestion } from "@/types/videoReview";
 import { QuestionEditor } from "./QuestionEditor";

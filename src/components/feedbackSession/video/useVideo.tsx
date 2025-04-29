@@ -1,4 +1,4 @@
-// src/components/review/video/useVideo.tsx
+// src/components/feedbackSession/video/useVideo.tsx
 import { useState, useRef, useCallback, useEffect } from 'react';
 
 interface UseVideoProps {

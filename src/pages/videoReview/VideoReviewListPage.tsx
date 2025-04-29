@@ -1,4 +1,4 @@
-// src/pages/projects/ProjectListPage.tsx
+// src/pages/videoReview/ProjectListPage.tsx
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { collection, query, where, orderBy, getDocs } from "firebase/firestore";

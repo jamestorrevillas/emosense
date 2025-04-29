@@ -1,4 +1,4 @@
-// src\pages\projects\ProjectDetailPage.tsx
+// src\pages\videoReview\ProjectDetailPage.tsx
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";

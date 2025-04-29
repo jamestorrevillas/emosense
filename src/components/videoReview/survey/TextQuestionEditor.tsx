@@ -1,4 +1,4 @@
-// src\components\projects\survey\TextQuestionEditor.tsx
+// src\components\videoReview\survey\TextQuestionEditor.tsx
 import { TextQuestion } from "@/types/videoReview";
 import { QuestionEditor } from "./QuestionEditor";
 import { Input } from "@/components/ui/input";

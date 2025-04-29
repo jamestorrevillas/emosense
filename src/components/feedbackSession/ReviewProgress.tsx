@@ -1,4 +1,4 @@
-// src/components/review/ReviewProgress.tsx
+// src/components/feedbackSession/ReviewProgress.tsx
 import { useReview } from "@/contexts/FeedbackSessionContext";
 import { Progress } from "@/components/ui/progress";
 import { ReviewStep } from "@/types/feedbackSession";

@@ -1,4 +1,4 @@
-// src/components/projects/analytics/EmotionAnalytics.tsx
+// src/components/videoReview/analytics/EmotionAnalytics.tsx
 import { useState, useEffect } from 'react';
 import { collection, doc, query, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';

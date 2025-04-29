@@ -1,4 +1,4 @@
-// src/components/review/video/VideoControls.tsx
+// src/components/feedbackSession/video/VideoControls.tsx
 import { Button } from "@/components/ui/button";
 import { 
   Play, 

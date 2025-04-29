@@ -1,4 +1,4 @@
-// src/pages/projects/EditProjectPage.tsx
+// src/pages/videoReview/EditProjectPage.tsx
 import { useState, useEffect } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { doc, getDoc, updateDoc } from "firebase/firestore";

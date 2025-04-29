@@ -1,4 +1,4 @@
-// src/components/projects/ProjectActions.tsx
+// src/components/videoReview/ProjectActions.tsx
 import { useState } from "react";
 import { doc, deleteDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";

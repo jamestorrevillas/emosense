@@ -1,4 +1,4 @@
-// src\components\projects\survey\QuestionTypeSelect.tsx
+// src\components\videoReview\survey\QuestionTypeSelect.tsx
 import { Button } from "@/components/ui/button";
 import {
   Card,

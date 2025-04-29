@@ -1,4 +1,4 @@
-// src/components/projects/analytics/SurveyAnalytics.tsx
+// src/components/videoReview/analytics/SurveyAnalytics.tsx
 import { useState, useEffect } from "react";
 import { collection, doc, query, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";

@@ -1,4 +1,4 @@
-// src/components/projects/TokenStats.tsx
+// src/components/videoReview/TokenStats.tsx
 import { useEffect, useState } from "react";
 import { 
   collection, 

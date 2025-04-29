@@ -1,4 +1,4 @@
-// src\components\projects\survey\SortableQuestion.tsx
+// src\components\videoReview\survey\SortableQuestion.tsx
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Grip } from "lucide-react";

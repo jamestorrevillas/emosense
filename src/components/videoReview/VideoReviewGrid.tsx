@@ -1,4 +1,4 @@
-// src/components/projects/ProjectGrid.tsx
+// src/components/videoReview/ProjectGrid.tsx
 import { Project } from "@/types/videoReview";
 import { ProjectCard } from "./VideoReviewCard";
 

@@ -1,4 +1,4 @@
-// src\components\projects\survey\RatingScaleEditor.tsx
+// src\components\videoReview\survey\RatingScaleEditor.tsx
 import { RatingScaleQuestion } from "@/types/videoReview";
 import { QuestionEditor } from "./QuestionEditor";
 import { Input } from "@/components/ui/input";

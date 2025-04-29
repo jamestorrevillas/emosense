@@ -1,4 +1,4 @@
-// src/components/review/steps/SurveyStep.tsx
+// src/components/feedbackSession/steps/SurveyStep.tsx
 import { useState, useEffect } from "react";
 import { collection, doc, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';

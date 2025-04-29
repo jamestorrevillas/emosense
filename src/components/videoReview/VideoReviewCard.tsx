@@ -1,4 +1,4 @@
-// src/components/projects/ProjectCard.tsx
+// src/components/videoReview/ProjectCard.tsx
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

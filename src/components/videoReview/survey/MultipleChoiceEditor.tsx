@@ -1,4 +1,4 @@
-// src\components\projects\survey\MultipleChoiceEditor.tsx
+// src\components\videoReview\survey\MultipleChoiceEditor.tsx
 import { useState } from "react";
 import { MultipleChoiceQuestion } from "@/types/videoReview";
 import { QuestionEditor } from "./QuestionEditor";

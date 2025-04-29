@@ -1,4 +1,4 @@
-// src\components\projects\survey\YesNoEditor.tsx
+// src\components\videoReview\survey\YesNoEditor.tsx
 import { YesNoQuestion } from "@/types/videoReview";
 import { QuestionEditor } from "./QuestionEditor";
 import { Card } from "@/components/ui/card";

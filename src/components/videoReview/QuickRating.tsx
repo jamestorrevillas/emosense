@@ -1,4 +1,4 @@
-// src/components/projects/QuickRating.tsx
+// src/components/videoReview/QuickRating.tsx
 import { useState } from 'react';
 import { Star, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { cn } from '@/lib/utils';

@@ -1,4 +1,4 @@
-// src/components/review/video/VideoStep.tsx
+// src/components/feedbackSession/video/VideoStep.tsx
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { collection, doc, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';

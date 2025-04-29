@@ -1,4 +1,4 @@
-// src/components/review/video/VideoPlayer.tsx
+// src/components/feedbackSession/video/VideoPlayer.tsx
 import { useEffect, useCallback } from 'react';
 import { useVideo } from './useVideo';
 import { VideoControls } from './VideoControls';

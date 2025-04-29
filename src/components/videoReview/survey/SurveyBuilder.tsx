@@ -1,4 +1,4 @@
-// src\components\projects\survey\SurveyBuilder.tsx
+// src\components\videoReview\survey\SurveyBuilder.tsx
 import { useState } from "react";
 import { Question, QuestionType } from "@/types/videoReview";
 import { Card, CardContent } from "@/components/ui/card";

@@ -1,4 +1,4 @@
-// src/components/projects/ProjectTabList.tsx
+// src/components/videoReview/ProjectTabList.tsx
 import { Project } from "@/types/videoReview";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProjectGrid } from "./VideoReviewGrid";

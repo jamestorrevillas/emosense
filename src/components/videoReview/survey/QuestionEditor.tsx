@@ -1,4 +1,4 @@
-// src\components\projects\survey\QuestionEditor.tsx
+// src\components\videoReview\survey\QuestionEditor.tsx
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

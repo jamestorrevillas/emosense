@@ -1,4 +1,4 @@
-// src/components/projects/VideoUpload.tsx
+// src/components/videoReview/VideoUpload.tsx
 import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';

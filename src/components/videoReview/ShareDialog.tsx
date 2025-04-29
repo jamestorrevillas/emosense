@@ -1,4 +1,4 @@
-// src/components/projects/ShareDialog.tsx
+// src/components/videoReview/ShareDialog.tsx
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {

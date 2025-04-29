@@ -1,4 +1,4 @@
-// src/components/projects/ProjectListSkeleton.tsx
+// src/components/videoReview/ProjectListSkeleton.tsx
 import { Card } from "@/components/ui/card";
 
 export function ProjectListSkeleton() {
