@@ -55,16 +55,19 @@ export const Navbar = () => {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 border-b bg-white">
       <div className="flex h-16 items-center px-4 gap-6 md:gap-8">
-        <div className="flex items-center gap-2">
-          <img 
-            src={Logo}
-            alt="EmoSense Logo" 
-            className="h-8 w-auto"
-          />
+      <div className="flex items-center gap-2">
+        <img 
+          src={Logo}
+          alt="EmoSense Logo" 
+          className="h-8 w-auto"
+        />
+        <div className="flex flex-col">
           <Link to="/app" className="font-bold text-xl text-[#011BA1]">
             EmoSense
           </Link>
+          <span className="text-xs text-slate-500">Emotion Analytics Platform</span>
         </div>
+      </div>
 
         {user ? (
           <div className="ml-auto flex items-center gap-4">

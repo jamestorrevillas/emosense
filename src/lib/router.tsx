@@ -6,18 +6,17 @@ import { SignUpPage } from '@/pages/auth/SignUpPage';
 import { ForgetPasswordPage } from '@/pages/auth/ForgetPasswordPage';
 import { Layout } from '@/components/shared/Layout';
 import { ReviewLayout } from '@/components/shared/Layout/ReviewLayout';
-import { AnimatedLayout } from '@/components/shared/Layout/AnimatedLayout';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { ProjectListPage } from '@/pages/projects/ProjectListPage';
-import { NewProjectPage } from '@/pages/projects/NewProjectPage';
-import { ProjectDetailPage } from '@/pages/projects/ProjectDetailPage';
-import { EditProjectPage } from '@/pages/projects/EditProjectPage';
-import { ReviewPage } from '@/pages/review/ReviewPage';
+import { VideoReviewListPage } from '@/pages/videoReview/VideoReviewListPage';
+import { NewVideoReviewPage } from '@/pages/videoReview/NewVideoReviewPage';
+import { VideoReviewDetailPage } from '@/pages/videoReview/VideoReviewDetailPage';
+import { EditVideoReviewPage } from '@/pages/videoReview/EditVideoReviewPage';
+import { FeedbackSessionPage } from '@/pages/feedbackSession/FeedbackSessionPage';
 import { SettingsPage } from '@/pages/settings/SettingsPage';
 import { PlaygroundPage } from '@/pages/playground/PlaygroundPage';
-import LandingPage from '@/pages/landing/LandingPage';
-import { PublicPlaygroundPage } from '@/pages/landing/playground/PublicPlaygroundPage';
 import { AudienceAIPage  } from '@/pages/audienceAI/AudienceAIPage';
+import LandingPage from '@/pages/landing/LandingPage';
+import { PublicPlaygroundPage } from '@pages/landing/playground/PublicPlaygroundPage';
 
 // Project routes with standard layout
 const protectedRoutes: RouteObject[] = [
@@ -34,104 +33,85 @@ const protectedRoutes: RouteObject[] = [
         element: <Navigate to="/app/dashboard" replace />
       },
       {
-        element: <AnimatedLayout />,
-        children: [
-          {
-            path: 'dashboard',
-            element: <DashboardPage />
-          },
-          {
-            path: 'projects',
-            element: <ProjectListPage />
-          },
-          {
-            path: 'projects/new',
-            element: <NewProjectPage />
-          },
-          {
-            path: 'projects/:id',
-            element: <ProjectDetailPage />
-          },
-          {
-            path: 'projects/:id/edit',
-            element: <EditProjectPage />
-          },
-          {
-            path: 'playground',
-            element: <PlaygroundPage />
-          },
-          {
-            path: 'settings',
-            element: <SettingsPage />
-          },
-          {
-            path: 'audienceai',
-            element: <AudienceAIPage />
-          }
-        ]
+        path: 'dashboard',
+        element: <DashboardPage />
+      },
+      {
+        path: 'video-review',
+        element: <VideoReviewListPage />
+      },
+      {
+        path: 'video-review/new',
+        element: <NewVideoReviewPage />
+      },
+      {
+        path: 'video-review/:id',
+        element: <VideoReviewDetailPage />
+      },
+      {
+        path: 'video-review/:id/edit',
+        element: <EditVideoReviewPage />
+      },
+      {
+        path: 'playground',
+        element: <PlaygroundPage />
+      },
+      {
+        path: 'settings',
+        element: <SettingsPage />
+      },
+      {
+        path: 'audienceai',
+        element: <AudienceAIPage />
       }
     ]
   }
 ];
 
-// Review routes with minimal layout
-const reviewRoutes: RouteObject[] = [
+// Feedback Session routes with minimal layout
+const feedbackSessionRoutes: RouteObject[] = [
   {
-    path: '/review',
+    path: '/feedback',
     element: <ReviewLayout />,
     children: [
       {
-        element: <AnimatedLayout />,
-        children: [
-          {
-            path: ':projectId/preview',
-            element: (
-              <ProtectedRoute>
-                <ReviewPage mode="preview" />
-              </ProtectedRoute>
-            )
-          },
-          {
-            path: ':projectId/:token',
-            element: <ReviewPage mode="public" />
-          }
-        ]
+        path: ':projectId/preview',
+        element: (
+          <ProtectedRoute>
+            <FeedbackSessionPage mode="preview" />
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: ':projectId/:token',
+        element: <FeedbackSessionPage mode="public" />
       }
     ]
   }
 ];
 
-// Public routes
+// Auth routes
 const publicRoutes: RouteObject[] = [
   {
     path: '/auth',
     children: [
       {
-        element: <AnimatedLayout />,
-        children: [
-          {
-            path: 'signin',
-            element: <SignInPage />
-          },
-          {
-            path: 'signup',
-            element: <SignUpPage />
-          },
-          {
-            path: 'forgot-password',
-            element: <ForgetPasswordPage />
-          }
-        ]
+        path: 'signin',
+        element: <SignInPage />
+      },
+      {
+        path: 'signup',
+        element: <SignUpPage />
+      },
+      {
+        path: 'forgot-password',
+        element: <ForgetPasswordPage />
       }
     ]
   },
   {
     path: '/playground',
-    element: (
-      <AnimatedLayout>
-        <PublicPlaygroundPage />
-      </AnimatedLayout>
-    )
+    element: <PublicPlaygroundPage />
   }
 ];
 
@@ -139,14 +119,10 @@ const publicRoutes: RouteObject[] = [
 export const router = createBrowserRouter([
   {
     path: '/',
-    element: (
-      <AnimatedLayout>
-        <LandingPage />
-      </AnimatedLayout>
-    )
+    element: <LandingPage />
   },
   ...protectedRoutes,
-  ...reviewRoutes,
+  ...feedbackSessionRoutes,
   ...publicRoutes,
   {
     path: '*',

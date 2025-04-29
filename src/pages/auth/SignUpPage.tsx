@@ -88,7 +88,7 @@ export const SignUpPage = () => {
             />
             <h1 className="text-3xl font-bold text-[#011BA1]">EmoSense</h1>
           </div>
-          <p className="text-slate-600">Video Emotion Analytics Platform</p>
+          <p className="text-slate-600">Emotion Analytics Platform</p>
         </div>
   
         <Card>

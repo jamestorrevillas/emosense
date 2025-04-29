@@ -3,10 +3,10 @@ import { useEffect, useState } from "react";
 import { collection, query, where, orderBy, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { useAuth } from "@/contexts/AuthContext";
-import { Project } from "@/types/project";
+import { Project } from "@/types/videoReview";
 import { TokenResponse } from "@/types/response";
 import { DashboardMetrics } from "@/components/dashboard/DashboardMetrics";
-import { RecentProjects } from "@/components/dashboard/RecentProjects";
+import { RecentProjects } from "@/components/dashboard/RecentVideoReviews";
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
 import { LoadingSkeleton } from "@/components/dashboard/LoadingSkeleton";
 

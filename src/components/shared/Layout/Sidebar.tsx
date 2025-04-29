@@ -12,7 +12,7 @@ type NavigationItem = {
 
 const navigation: NavigationItem[] = [
   { name: 'Dashboard', href: '/app/dashboard', icon: Home },
-  { name: 'Projects', href: '/app/projects', icon: Folder },
+  { name: 'Video Review', href: '/app/video-review', icon: Folder },
   { name: 'AudienceAI', href: '/app/audienceai', icon: Users },
   { name: 'Playground', href: '/app/playground', icon: FlaskConical },
   { name: 'Settings', href: '/app/settings', icon: Settings },
