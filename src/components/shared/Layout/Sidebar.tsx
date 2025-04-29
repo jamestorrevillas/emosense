@@ -1,6 +1,6 @@
 // src/components/shared/Layout/Sidebar.tsx
 import { Link, useLocation } from 'react-router-dom';
-import { Folder, Home, Settings, FlaskConical, Users } from 'lucide-react';
+import { Home, Settings, FlaskConical, Users, Video } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -12,7 +12,7 @@ type NavigationItem = {
 
 const navigation: NavigationItem[] = [
   { name: 'Dashboard', href: '/app/dashboard', icon: Home },
-  { name: 'Video Review', href: '/app/video-review', icon: Folder },
+  { name: 'Video Review', href: '/app/video-review', icon: Video },
   { name: 'AudienceAI', href: '/app/audienceai', icon: Users },
   { name: 'Playground', href: '/app/playground', icon: FlaskConical },
   { name: 'Settings', href: '/app/settings', icon: Settings },
